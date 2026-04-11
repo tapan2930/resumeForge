@@ -130,7 +130,7 @@ export default function TemplatesPage() {
                 </DialogHeader>
                 <div className="py-2">
                   <Textarea
-                    placeholder='{ "name": "...", "nodes": { ... } }'
+                    placeholder='{ &quot;name&quot;: &quot;...&quot;, &quot;nodes&quot;: { ... } }'
                     className="min-h-[300px] font-mono text-xs"
                     value={importValue}
                     onChange={(e) => setImportValue(e.target.value)}

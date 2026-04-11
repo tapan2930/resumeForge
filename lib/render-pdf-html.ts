@@ -125,7 +125,7 @@ function pdfParagraphStyle(
 
 function pdfListStyle(template: ResumeTemplate, bodyFont: string): string {
   const compact = template === "compact";
-  return `margin:0 0 12px;padding-left:20px;font-family:${bodyFont};font-size:${compact ? "11px" : "13px"};line-height:${compact ? "1.35" : "1.45"};color:#222;`;
+  return `margin:0 0 12px;padding-left:28px;font-family:${bodyFont};font-size:${compact ? "11px" : "13px"};line-height:${compact ? "1.35" : "1.45"};color:#222;`;
 }
 
 export function nodeHtml(
@@ -137,21 +137,33 @@ export function nodeHtml(
     linkSettings?: LinkSettings;
     customTemplate?: CustomTemplate;
     isPreview?: boolean;
-  }
+    avoidSectionBreaks?: boolean;
+  },
+  path = ""
 ): string {
   const kids =
     node.content
-      ?.map((c) => nodeHtml(c, template, fontPreset, opts))
+      ?.map((c, i) =>
+        nodeHtml(c, template, fontPreset, opts, path ? `${path}.${i}` : `${i}`)
+      )
       .join("") ?? "";
 
   const fp = resolveFontPreset(fontPreset);
   const { pdfBody, pdfDisplay } = RESUME_FONT_PRESETS[fp];
 
   const ct = opts.customTemplate;
+  const customType = String(node.attrs?.customType || "");
 
   const wrap = (html: string, type: string) => {
     if (!opts.isPreview) return html;
-    return `<div data-node-type="${type}" style="display: block; min-height: 1px;">${html}</div>`;
+    return `<div data-node-type="${type}" data-node-path="${path}" style="display: block; min-height: 1px; cursor: pointer;">${html}</div>`;
+  };
+
+  // Helper to find universal overrides: "p:contact-bar", "h1:name-header", etc.
+  const getOverride = (nodeType: string) => {
+    if (!ct || !customType) return null;
+    const key = `${nodeType}:${customType}`;
+    return ct.nodes.overrides?.[key] || null;
   };
 
   switch (node.type) {
@@ -162,6 +174,10 @@ export function nodeHtml(
     case "heading": {
       const level = (node.attrs?.level as number) ?? 1;
       const key = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
+      const override = getOverride(key);
+      if (override) {
+        return wrap(override.html.replace("{{content}}", kids), `${key}:${customType}`);
+      }
       if (ct) {
         return wrap(ct.nodes[key].html.replace("{{content}}", kids), key);
       }
@@ -174,36 +190,94 @@ export function nodeHtml(
       const tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
       return wrap(`<${tag} style="${styles}">${kids}</${tag}>`, key);
     }
-    case "paragraph":
+    case "paragraph": {
+      const override = getOverride("p");
+      if (override) {
+        return wrap(override.html.replace("{{content}}", kids), `p:${customType}`);
+      }
       if (ct) return wrap(ct.nodes.p.html.replace("{{content}}", kids), "p");
       return wrap(
         `<p style="${pdfParagraphStyle(template as ResumeTemplate, pdfBody)}">${kids}</p>`,
         "p"
       );
-    case "bulletList":
+    }
+    case "bulletList": {
+      const override = getOverride("ul");
+      if (override) {
+        return wrap(override.html.replace("{{content}}", kids), `ul:${customType}`);
+      }
       if (ct) return wrap(ct.nodes.ul.html.replace("{{content}}", kids), "ul");
       return wrap(
-        `<ul style="${pdfListStyle(template as ResumeTemplate, pdfBody)}">${kids}</ul>`,
+        `<ul style="${pdfListStyle(template as ResumeTemplate, pdfBody)}list-style-type:disc;">${kids}</ul>`,
         "ul"
       );
-    case "orderedList":
+    }
+    case "orderedList": {
+      const override = getOverride("ol");
+      if (override) {
+        return wrap(override.html.replace("{{content}}", kids), `ol:${customType}`);
+      }
       if (ct) return wrap(ct.nodes.ol.html.replace("{{content}}", kids), "ol");
       return wrap(
-        `<ol style="${pdfListStyle(template as ResumeTemplate, pdfBody)}">${kids}</ol>`,
+        `<ol style="${pdfListStyle(template as ResumeTemplate, pdfBody)}list-style-type:decimal;">${kids}</ol>`,
         "ol"
       );
-    case "listItem":
-      if (ct) return wrap(ct.nodes.li.html.replace("{{content}}", kids), "li");
-      return wrap(`<li style="margin-bottom:4px;">${kids}</li>`, "li");
+    }
+    case "listItem": {
+      const override = getOverride("li");
+      const liStyle = "margin-bottom:4px; display: list-item;";
+      const attrs = opts.isPreview
+        ? `data-node-type="${override ? `li:${customType}` : "li"}" data-node-path="${path}"`
+        : "";
+
+      if (override) {
+        return override.html
+          .replace("{{content}}", kids)
+          .replace("<li", `<li ${attrs}`);
+      }
+      if (ct) {
+        return ct.nodes.li.html
+          .replace("{{content}}", kids)
+          .replace("<li", `<li ${attrs}`);
+      }
+      return `<li style="${liStyle}" ${attrs}>${kids}</li>`;
+    }
     case "horizontalRule":
       if (!opts.sectionDividers) return "";
+      const hrOverride = getOverride("hr");
+      if (hrOverride) {
+        return wrap(hrOverride.html.replace("{{content}}", ""), `hr:${customType}`);
+      }
+      if (ct?.nodes.hr) {
+        return wrap(ct.nodes.hr.html.replace("{{content}}", ""), "hr");
+      }
       return `<hr style="border:none;border-top:1px solid #ddd;margin:16px 0;" />`;
     case "resumeSection": {
-      if (ct)
-        return wrap(
-          ct.nodes.section.html.replace("{{content}}", kids),
-          "section"
-        );
+      const sectionType = String(
+        node.attrs?.customType || node.attrs?.sectionType || "custom"
+      );
+      const avoidBreak = opts.avoidSectionBreaks ? "break-inside: avoid;" : "";
+
+      if (ct) {
+        // Check for specific override first
+        const override =
+          ct.nodes.overrides?.[`section:${sectionType}`] ||
+          ct.nodes.section.overrides?.[sectionType];
+
+        let html = override
+          ? override.html.replace("{{content}}", kids)
+          : ct.nodes.section.default.html.replace("{{content}}", kids);
+
+        if (opts.avoidSectionBreaks) {
+          if (html.includes('style="')) {
+            html = html.replace('style="', `style="${avoidBreak} `);
+          } else {
+            html = html.replace("<section", `<section style="${avoidBreak}"`);
+          }
+        }
+
+        return wrap(html, override ? `section:${sectionType}` : "section");
+      }
       const thick = template !== "minimal" && template !== "compact";
       const border =
         opts.sectionDividers && thick
@@ -211,7 +285,10 @@ export function nodeHtml(
           : opts.sectionDividers && template === "compact"
             ? "border-left:1px solid #f59e0b;padding-left:10px;margin-bottom:8px;"
             : "margin-bottom:8px;";
-      return wrap(`<section style="${border}">${kids}</section>`, "section");
+      return wrap(
+        `<section style="${border}${avoidBreak}">${kids}</section>`,
+        "section"
+      );
     }
     default:
       return `<div style="font-family:${pdfBody};font-size:13px;">${kids}</div>`;
@@ -228,6 +305,7 @@ export function buildResumePdfHtml(params: {
   paperSize: PaperSize;
   includeHeader: boolean;
   includeSectionDividers: boolean;
+  avoidSectionBreaks: boolean;
   headerName?: string;
 }): string {
   const {
@@ -240,6 +318,7 @@ export function buildResumePdfHtml(params: {
     paperSize,
     includeHeader,
     includeSectionDividers,
+    avoidSectionBreaks,
     headerName,
   } = params;
 
@@ -250,6 +329,7 @@ export function buildResumePdfHtml(params: {
     sectionDividers: includeSectionDividers,
     linkSettings,
     customTemplate,
+    avoidSectionBreaks,
   });
 
   const pageSize = paperSize === "a4" ? "A4" : "Letter";
@@ -272,13 +352,13 @@ export function buildResumePdfHtml(params: {
 <meta charset="utf-8"/>
 <link href="${RESUME_PDF_GOOGLE_FONTS_HREF}" rel="stylesheet"/>
 <style>
-  @page { size: ${pageSize}; margin: 0; }
+  @page { 
+    size: ${pageSize}; 
+    margin: ${m.vertical}px ${m.horizontal}px; 
+  }
   html { color-scheme: only light; }
   html, body { margin: 0; padding: 0; background: #ffffff; }
   .page { 
-    box-sizing: border-box; 
-    padding: ${m.vertical}px ${m.horizontal}px; 
-    min-height: 100vh; 
     color: #1a1a1a; 
     background: #ffffff; 
   }
@@ -287,7 +367,7 @@ export function buildResumePdfHtml(params: {
 <body>
   ${
     customTemplate
-      ? `<div style="box-sizing: border-box; padding: ${m.vertical}px ${m.horizontal}px; min-height: 100vh;">${pageWrapper}</div>`
+      ? `<div style="min-height: 100vh;">${pageWrapper}</div>`
       : pageWrapper
   }
 </body>

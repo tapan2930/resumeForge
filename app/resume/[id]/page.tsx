@@ -125,10 +125,19 @@ export default function ResumePage() {
   const saveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const { hasKey } = useGemini();
 
-  const activeCustomTemplate = useMemo(
-    () => customTemplates.find((t) => t.id === template),
-    [customTemplates, template]
-  );
+  const activeCustomTemplate = useMemo(() => {
+    const t = customTemplates.find((t) => t.id === template);
+    if (!t) return undefined;
+    const normalized = structuredClone(t);
+    if (normalized.nodes.section && !("default" in normalized.nodes.section)) {
+      const legacyHtml = (normalized.nodes.section as any).html || "";
+      normalized.nodes.section = {
+        default: { html: legacyHtml },
+        overrides: {},
+      };
+    }
+    return normalized;
+  }, [customTemplates, template]);
 
   const onCustomizeBuiltIn = async (builtInId: ResumeTemplate) => {
     try {

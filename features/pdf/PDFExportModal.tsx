@@ -49,6 +49,7 @@ export function PDFExportModal({
   const [includeHeader, setIncludeHeader] = useState(true);
   const [includePageNumbers, setIncludePageNumbers] = useState(false);
   const [includeSectionDividers, setIncludeSectionDividers] = useState(true);
+  const [avoidSectionBreaks, setAvoidSectionBreaks] = useState(false);
   const [fileName, setFileName] = useState(defaultFileName);
   const [loading, setLoading] = useState(false);
 
@@ -72,6 +73,7 @@ export function PDFExportModal({
           includeHeader,
           includePageNumbers,
           includeSectionDividers,
+          avoidSectionBreaks,
           headerName,
         }),
       });
@@ -162,6 +164,17 @@ export function PDFExportModal({
             />
             <Label htmlFor="pdf-dividers" className="cursor-pointer font-normal">
               Section dividers in body
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="pdf-breaks"
+              checked={avoidSectionBreaks}
+              onCheckedChange={(v) => setAvoidSectionBreaks(!!v)}
+              aria-label="Avoid section breaks"
+            />
+            <Label htmlFor="pdf-breaks" className="cursor-pointer font-normal">
+              Keep sections together (avoid splitting across pages)
             </Label>
           </div>
           <div className="grid gap-2">

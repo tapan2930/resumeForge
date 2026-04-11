@@ -290,8 +290,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         li: {
           html: '<li style="margin-bottom:4px; font-size:14px; color:#333;">{{content}}</li>',
         },
+        hr: {
+          html: '<hr style="border:none; border-top:1px solid #ddd; margin:16px 0;" />',
+        },
         section: {
-          html: '<section style="margin-bottom:16px;">{{content}}</section>',
+          default: {
+            html: '<section style="margin-bottom:16px;">{{content}}</section>',
+          },
+          overrides: {},
         },
         page: {
           html: '<div style="background:white; color:#1a1a1a;">{{content}}</div>',

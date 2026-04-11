@@ -7,7 +7,8 @@ export type ResumeSectionType =
   | "skills"
   | "projects"
   | "certifications"
-  | "custom";
+  | "custom"
+  | (string & {});
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {

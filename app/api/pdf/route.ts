@@ -30,6 +30,7 @@ type Body = {
   includeHeader: boolean;
   includePageNumbers: boolean;
   includeSectionDividers: boolean;
+  avoidSectionBreaks: boolean;
   headerName?: string;
 };
 
@@ -55,6 +56,7 @@ export async function POST(req: Request) {
     paperSize: body.paperSize ?? "letter",
     includeHeader: body.includeHeader ?? true,
     includeSectionDividers: body.includeSectionDividers ?? true,
+    avoidSectionBreaks: body.avoidSectionBreaks ?? false,
     headerName: body.headerName,
   });
 

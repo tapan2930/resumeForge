@@ -103,7 +103,15 @@ export function getBuiltInTemplateAsCustom(
         html: `<ol style="${getListStyle()}list-style-type:decimal;">{{content}}</ol>`,
       },
       li: { html: `<li style="margin-bottom:4px;">{{content}}</li>` },
-      section: { html: `<section style="${getSectionStyle()}">{{content}}</section>` },
+      hr: {
+        html: `<hr style="border:none;border-top:1px solid #ddd;margin:16px 0;" />`,
+      },
+      section: {
+        default: {
+          html: `<section style="${getSectionStyle()}">{{content}}</section>`,
+        },
+        overrides: {},
+      },
       page: {
         html: `<div style="background:white; color:#1a1a1a;">{{content}}</div>`,
       },

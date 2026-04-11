@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import {
+  useEditor,
+  EditorContent,
+  BubbleMenu,
+  type Editor,
+} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
@@ -23,6 +28,7 @@ import {
   ScanLine,
   Sparkles,
   FileDown,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResumeSection } from "@/features/resume/extensions/resume-section";
+import { CustomNodeAttributes } from "@/features/resume/extensions/custom-node-attributes";
 import { sectionTemplates } from "@/lib/default-content";
 import { SectionOutline } from "@/features/resume/SectionOutline";
 import { cn } from "@/lib/utils";
@@ -85,6 +92,7 @@ export function ResumeEditor({
         placeholder: "Write your resume…",
       }),
       ResumeSection,
+      CustomNodeAttributes,
     ],
     content,
     editorProps: {
@@ -145,6 +153,30 @@ export function ResumeEditor({
     },
     [editor]
   );
+
+  const setCustomType = (type: string | null) => {
+    if (!editor) return;
+    const types = [
+      "paragraph",
+      "heading",
+      "bulletList",
+      "orderedList",
+      "resumeSection",
+    ];
+    for (const t of types) {
+      if (editor.isActive(t)) {
+        editor.chain().focus().updateAttributes(t, { customType: type }).run();
+        return;
+      }
+    }
+  };
+
+  const onNewCustomType = () => {
+    const val = window.prompt(
+      "Enter style identifier (e.g., contact-bar, skills-grid, subheader)"
+    );
+    if (val) setCustomType(val.toLowerCase().trim());
+  };
 
   if (!editor) {
     return (
@@ -351,6 +383,78 @@ export function ResumeEditor({
         <SectionOutline editor={editor} />
 
         <div className="min-h-0 flex-1 overflow-y-auto">
+          {editor && (
+            <BubbleMenu
+              editor={editor}
+              tippyOptions={{ duration: 100 }}
+              shouldShow={({ editor }) =>
+                editor.isActive("paragraph") ||
+                editor.isActive("heading") ||
+                editor.isActive("bulletList") ||
+                editor.isActive("orderedList") ||
+                editor.isActive("resumeSection")
+              }
+            >
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-xl">
+                <div className="px-2 text-[10px] uppercase font-bold text-muted-foreground tracking-wider border-r border-border mr-1">
+                  Style Type
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 px-2 text-xs"
+                    >
+                      <Settings2 className="h-3 w-3" />
+                      {(() => {
+                        const ct =
+                          editor.getAttributes("paragraph").customType ||
+                          editor.getAttributes("heading").customType ||
+                          editor.getAttributes("bulletList").customType ||
+                          editor.getAttributes("orderedList").customType ||
+                          editor.getAttributes("resumeSection").customType ||
+                          editor.getAttributes("resumeSection").sectionType ||
+                          "default";
+                        return String(ct);
+                      })()}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40">
+                    <DropdownMenuItem
+                      className="cursor-pointer text-xs"
+                      onClick={() => setCustomType(null)}
+                    >
+                      default
+                    </DropdownMenuItem>
+                    {[
+                      "summary",
+                      "work",
+                      "education",
+                      "skills",
+                      "projects",
+                      "certifications",
+                      "contact-bar",
+                    ].map((t) => (
+                      <DropdownMenuItem
+                        key={t}
+                        className="cursor-pointer text-xs"
+                        onClick={() => setCustomType(t)}
+                      >
+                        {t}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuItem
+                      className="cursor-pointer text-xs font-semibold text-primary"
+                      onClick={onNewCustomType}
+                    >
+                      + New Style Tag
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </BubbleMenu>
+          )}
           <EditorContent editor={editor} />
         </div>
       </div>

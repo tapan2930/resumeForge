@@ -31,8 +31,10 @@ export interface CustomTemplate {
     ul: NodeTemplate;
     ol: NodeTemplate;
     li: NodeTemplate;
-    section: NodeTemplate;
-    page: NodeTemplate; // The outer wrapper
+    hr: NodeTemplate;
+    section: NodeTemplate; // Default section
+    page: NodeTemplate; // Outer wrapper
+    overrides: Record<string, NodeTemplate>; // e.g. "p:contact-bar", "ul:skills-grid"
   };
   createdAt: string;
   updatedAt: string;
@@ -54,6 +56,7 @@ export interface ResumeVersion {
   template: ResumeTemplate | string;
   margins?: MarginSettings;
   linkSettings?: LinkSettings;
+  avoidSectionBreaks?: boolean;
   atsScore: number | null;
   grammarScore: number | null;
   isTailored: boolean;
@@ -87,6 +90,7 @@ export interface PDFExportOptions {
   includeHeader: boolean;
   includePageNumbers: boolean;
   includeSectionDividers: boolean;
+  avoidSectionBreaks: boolean;
   fileName: string;
 }
 
