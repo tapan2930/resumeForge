@@ -111,10 +111,11 @@ export function getBuiltInTemplateAsCustom(
           html: `<section style="${getSectionStyle()}">{{content}}</section>`,
         },
         overrides: {},
-      },
+      } as any,
       page: {
         html: `<div style="background:white; color:#1a1a1a;">{{content}}</div>`,
       },
+      overrides: {},
     },
   };
 }

@@ -131,7 +131,7 @@ export default function ResumePage() {
     const normalized = structuredClone(t);
     if (normalized.nodes.section && !("default" in normalized.nodes.section)) {
       const legacyHtml = (normalized.nodes.section as any).html || "";
-      normalized.nodes.section = {
+      (normalized.nodes as any).section = {
         default: { html: legacyHtml },
         overrides: {},
       };

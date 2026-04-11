@@ -245,7 +245,7 @@ export default function TemplatesPage() {
               <Button
                 variant="outline"
                 className="cursor-pointer gap-2"
-                onClick={onCreate}
+                onClick={() => void onCreate()}
                 disabled={loading}
               >
                 <Plus className="h-4 w-4" />

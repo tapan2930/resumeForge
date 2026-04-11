@@ -298,10 +298,11 @@ export const useAppStore = create<AppState>((set, get) => ({
             html: '<section style="margin-bottom:16px;">{{content}}</section>',
           },
           overrides: {},
-        },
+        } as any,
         page: {
           html: '<div style="background:white; color:#1a1a1a;">{{content}}</div>',
         },
+        overrides: {},
       },
       createdAt: t,
       updatedAt: t,

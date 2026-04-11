@@ -262,11 +262,11 @@ export function nodeHtml(
         // Check for specific override first
         const override =
           ct.nodes.overrides?.[`section:${sectionType}`] ||
-          ct.nodes.section.overrides?.[sectionType];
+          (ct.nodes.section as any).overrides?.[sectionType];
 
         let html = override
           ? override.html.replace("{{content}}", kids)
-          : ct.nodes.section.default.html.replace("{{content}}", kids);
+          : (ct.nodes.section as any).default.html.replace("{{content}}", kids);
 
         if (opts.avoidSectionBreaks) {
           if (html.includes('style="')) {

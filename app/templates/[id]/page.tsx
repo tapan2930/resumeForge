@@ -77,7 +77,7 @@ const PRISM_THEME = `
 `;
 
 if (languages.markup) {
-  languages.markup.placeholder = /\{\{content\}\}/;
+  (languages.markup as any).placeholder = /\{\{content\}\}/;
 }
 
 const COMMON_CSS_PROPS = [
@@ -455,7 +455,7 @@ export default function TemplateBuilderPage() {
       const normalized = structuredClone(t);
       if (normalized.nodes.section && !("default" in normalized.nodes.section)) {
         const legacyHtml = (normalized.nodes.section as any).html || "";
-        normalized.nodes.section = {
+        (normalized.nodes as any).section = {
           default: { html: legacyHtml },
           overrides: {},
         };
@@ -488,7 +488,8 @@ export default function TemplateBuilderPage() {
 
   const getActiveHtml = useCallback(() => {
     if (!template) return "";
-    if (activeNode === "section") return template.nodes.section.default.html;
+    if (activeNode === "section")
+      return (template.nodes.section as any)?.default?.html || "";
     if (activeNode.includes(":")) {
       return template.nodes.overrides[activeNode]?.html || "";
     }
@@ -503,9 +504,8 @@ export default function TemplateBuilderPage() {
         if (!prev) return null;
         const next = { ...prev };
         if (activeNode === "section") {
-          next.nodes.section.default.html = val;
-        } else if (activeNode.includes(":")) {
-          next.nodes.overrides[activeNode] = { html: val };
+          (next.nodes as any).section.default.html = val;
+        } else if (activeNode.includes(":")) {          next.nodes.overrides[activeNode] = { html: val };
         } else {
           // @ts-ignore
           next.nodes[activeNode] = { html: val };
@@ -521,7 +521,7 @@ export default function TemplateBuilderPage() {
     let formatted = raw;
     formatted = formatted.replace(/>\s*</g, ">\n<");
 
-    const styleRegex = /style=(["'])(.*?)\1/gs;
+    const styleRegex = /style=(["'])([\s\S]*?)\1/g;
     formatted = formatted.replace(styleRegex, (match, quote, styleContent) => {
       const props = styleContent
         .split(";")
@@ -590,8 +590,9 @@ export default function TemplateBuilderPage() {
     setTemplate((prev) => {
       if (!prev) return null;
       const next = { ...prev };
-      const baseHtml = overrideOpen === "section"
-          ? next.nodes.section.default.html
+      const baseHtml =
+        overrideOpen === "section"
+          ? (next.nodes as any).section.default.html
           : (next.nodes as any)[overrideOpen].html;
 
       next.nodes.overrides[key] = { html: baseHtml };
@@ -655,8 +656,8 @@ export default function TemplateBuilderPage() {
 
   const insertCssProp = (prop: string) => {
     const current = getActiveHtml();
-    // Match the first opening tag, handling potential newlines (s flag)
-    const tagMatch = current.match(/<([a-z1-6]+)(.*?)>/is);
+    // Match the first opening tag, handling potential newlines
+    const tagMatch = current.match(/<([a-z1-6]+)([\s\S]*?)>/i);
     if (!tagMatch) return;
 
     const fullTag = tagMatch[0];
@@ -664,7 +665,7 @@ export default function TemplateBuilderPage() {
     const attrs = tagMatch[2];
 
     // Check for existing style attribute (double or single quotes, multiline)
-    const styleMatch = attrs.match(/style=(["'])(.*?)\1/is);
+    const styleMatch = attrs.match(/style=(["'])([\s\S]*?)\1/i);
 
     let nextHtml = "";
     if (styleMatch) {
@@ -716,10 +717,13 @@ export default function TemplateBuilderPage() {
           </Button>
           <div className="min-w-0 flex-1">
             <Input
-              variant="ghost"
-              className="h-7 w-full max-w-sm px-2 text-sm font-semibold hover:bg-secondary/50 focus:bg-secondary/50"
+              className="h-7 w-full max-w-sm px-2 text-sm font-semibold border-none bg-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus-visible:ring-0"
               value={template.name}
-              onChange={(e) => setTemplate((prev) => prev ? { ...prev, name: e.target.value } : null)}
+              onChange={(e) =>
+                setTemplate((prev) =>
+                  prev ? { ...prev, name: e.target.value } : null
+                )
+              }
             />
           </div>
           <Button type="button" size="sm" className="cursor-pointer gap-2" onClick={onSave} disabled={saving}>
@@ -825,10 +829,7 @@ export default function TemplateBuilderPage() {
                           </Button>
                         </div>
                         <div className="flex-1 flex flex-col overflow-hidden rounded-md border border-border bg-secondary/30">
-                          <ScrollArea
-                            className="flex-1"
-                            viewportClassName="h-full"
-                          >
+                          <ScrollArea className="flex-1">
                             <style
                               dangerouslySetInnerHTML={{ __html: PRISM_THEME }}
                             />
