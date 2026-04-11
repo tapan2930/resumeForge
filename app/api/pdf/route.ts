@@ -62,23 +62,24 @@ export async function POST(req: Request) {
 
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | undefined;
   try {
-    const localArgs = [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--font-render-hinting=none",
-    ];
+    const isLinux = process.platform === "linux";
+    const chromeOverride = process.env.CHROME_EXECUTABLE_PATH?.trim();
 
-    const localChrome = resolveLocalChromeExecutable();
-
-    if (localChrome) {
+    if (chromeOverride) {
+      // Explicit override from env
       browser = await puppeteer.launch({
-        executablePath: localChrome,
+        executablePath: chromeOverride,
         headless: true,
-        args: localArgs,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--font-render-hinting=none",
+        ],
         defaultViewport: chromium.defaultViewport,
       });
-    } else if (shouldUseSparticuzChromium()) {
+    } else if (isLinux) {
+      // Preferred path for Vercel/Serverless
       browser = await puppeteer.launch({
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
@@ -86,15 +87,30 @@ export async function POST(req: Request) {
         headless: chromium.headless,
       });
     } else {
-      return NextResponse.json(
-        {
-          error:
-            "PDF needs a Chromium-based browser. Install Google Chrome or Brave " +
-            "(e.g. macOS: Brave in /Applications/Brave Browser.app) or set " +
-            "CHROME_EXECUTABLE_PATH to the browser binary.",
-        },
-        { status: 503 }
-      );
+      // Local development (macOS/Windows)
+      const localChrome = resolveLocalChromeExecutable();
+      if (!localChrome) {
+        return NextResponse.json(
+          {
+            error:
+              "PDF needs a Chromium-based browser. Install Google Chrome or Brave " +
+              "(e.g. macOS: Brave in /Applications/Brave Browser.app) or set " +
+              "CHROME_EXECUTABLE_PATH to the browser binary.",
+          },
+          { status: 503 }
+        );
+      }
+      browser = await puppeteer.launch({
+        executablePath: localChrome,
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--font-render-hinting=none",
+        ],
+        defaultViewport: chromium.defaultViewport,
+      });
     }
 
     const page = await browser.newPage();
