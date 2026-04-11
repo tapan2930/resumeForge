@@ -11,7 +11,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-ibm-plex-mono)", "ui-monospace", "monospace"],
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
         resume: ["var(--font-lora)", "Georgia", "serif"],
         display: ["var(--font-playfair)", "Georgia", "serif"],
         "resume-mw": ["var(--font-merriweather)", "Georgia", "serif"],

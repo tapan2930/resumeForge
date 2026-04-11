@@ -38,7 +38,7 @@ function pdfHeadingFontFamily(
   display: string
 ): string {
   if (template === "modern" && level === 2) {
-    return "'IBM Plex Mono',monospace";
+    return "'Inter',system-ui,sans-serif";
   }
   if (level === 1) {
     if (template === "minimal" || template === "compact") return body;
@@ -193,7 +193,7 @@ export function buildResumePdfHtml(params: {
 
   const headerBlock =
     includeHeader && headerName
-      ? `<header style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#666;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:6px;">${esc(headerName)}</header>`
+      ? `<header style="font-family:'Inter',system-ui,sans-serif;font-size:10px;color:#666;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:6px;">${esc(headerName)}</header>`
       : "";
 
   return `<!DOCTYPE html>
@@ -203,8 +203,9 @@ export function buildResumePdfHtml(params: {
 <link href="${RESUME_PDF_GOOGLE_FONTS_HREF}" rel="stylesheet"/>
 <style>
   @page { size: ${pageSize}; margin: ${margin}; }
-  html, body { margin: 0; padding: 0; background: #faf8f5; }
-  .page { box-sizing: border-box; padding: 0.4in 0.55in; min-height: 100vh; color: #1a1a1a; }
+  html { color-scheme: only light; }
+  html, body { margin: 0; padding: 0; background: #ffffff; }
+  .page { box-sizing: border-box; padding: 0.4in 0.55in; min-height: 100vh; color: #1a1a1a; background: #ffffff; }
 </style>
 </head>
 <body>

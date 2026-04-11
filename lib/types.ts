@@ -30,8 +30,6 @@ export interface ResumeVersion {
   title: string;
   content: JSONContent;
   template: ResumeTemplate;
-  /** Typography pairing; omit in legacy IndexedDB records → default at read time */
-  fontPreset?: ResumeFontPreset;
   atsScore: number | null;
   grammarScore: number | null;
   isTailored: boolean;

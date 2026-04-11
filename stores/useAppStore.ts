@@ -2,13 +2,7 @@
 
 import { create } from "zustand";
 import type { JSONContent } from "@tiptap/core";
-import type {
-  ResumeFolder,
-  ResumeFontPreset,
-  ResumeTemplate,
-  ResumeVersion,
-} from "@/lib/types";
-import { DEFAULT_RESUME_FONT_PRESET } from "@/lib/resume-fonts";
+import type { ResumeFolder, ResumeTemplate, ResumeVersion } from "@/lib/types";
 import { generateId } from "@/lib/utils";
 import { emptyDocument } from "@/lib/default-content";
 import {
@@ -48,9 +42,7 @@ interface AppState {
 
   addVersion: (
     folderId: string,
-    partial?: Partial<
-      Pick<ResumeVersion, "title" | "content" | "template" | "fontPreset">
-    >
+    partial?: Partial<Pick<ResumeVersion, "title" | "content" | "template">>
   ) => Promise<ResumeVersion>;
   updateVersion: (
     id: string,
@@ -158,7 +150,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       title: partial?.title ?? "Untitled version",
       content: partial?.content ?? emptyDocument,
       template: partial?.template ?? "minimal",
-      fontPreset: partial?.fontPreset ?? DEFAULT_RESUME_FONT_PRESET,
       atsScore: null,
       grammarScore: null,
       isTailored: false,

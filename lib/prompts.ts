@@ -112,3 +112,36 @@ Return JSON: { "title": string (short version label), "content": <TipTap JSON do
 
 export const GEMINI_PING_USER =
   "Reply with the single word: ok";
+
+export const JOB_URL_PARSE_SYSTEM = `You extract structured job posting data from noisy web page text. Output only valid JSON.`;
+
+export const JOB_URL_PARSE_USER = (pageText: string) => `Extract job details from the text below and return ONLY a valid JSON object 
+with no markdown, no backticks, and no explanation. Preserve the full job description text — do not summarize it.
+If a field cannot be determined, use null for strings and [] for arrays.
+
+Schema:
+{
+  "jobTitle": string | null,
+  "companyName": string | null,
+  "location": string | null,
+  "jobType": "full-time" | "part-time" | "contract" | "internship" | null,
+  "experienceLevel": string | null,
+  "jobDescription": string | null,
+  "requiredSkills": string[],
+  "niceToHaveSkills": string[],
+  "responsibilities": string[],
+  "qualifications": string[],
+  "salary": string | null,
+  "source": "linkedin" | "indeed" | "greenhouse" | "lever" | "workday" | "glassdoor" | "wellfound" | "other"
+}
+
+Page text:
+"""
+${pageText}
+"""
+`;
+
+/** Grouped accessors for tooling / docs (optional). */
+export const PROMPTS = {
+  JOB_URL_PARSE: JOB_URL_PARSE_USER,
+} as const;

@@ -37,10 +37,10 @@ export function resumePaperClasses(
   className?: string
 ): string {
   return cn(
-    "rounded-sm bg-[hsl(var(--canvas))] text-[hsl(var(--canvas-foreground))] shadow-[0_2px_24px_rgba(0,0,0,0.12),0_0_1px_rgba(0,0,0,0.08)]",
+    "rounded-sm bg-white text-neutral-900 [color-scheme:light] shadow-[0_2px_24px_rgba(0,0,0,0.12),0_0_1px_rgba(0,0,0,0.08)]",
     "w-full max-w-[612px] mx-auto min-h-[792px] px-10 py-10",
     template === "classic" && "px-12",
-    template === "modern" && "px-11 py-11 border border-canvas-foreground/10",
+    template === "modern" && "px-11 py-11 border border-neutral-200",
     template === "executive" && "px-12 py-12",
     template === "compact" && "px-8 py-8 max-w-[600px] min-h-[720px]",
     template === "editorial" && "px-14 py-12",
@@ -55,14 +55,14 @@ export function resumeHeadingClasses(
 ): string {
   const ff = resumeHeadingFontClass(template, level, preset);
   return cn(
-    "text-canvas-foreground",
+    "text-neutral-900",
     ff,
     template === "minimal" &&
       level === 1 &&
-      "text-2xl font-normal tracking-tight border-b border-canvas-foreground/15 pb-2 mb-3",
+      "text-2xl font-normal tracking-tight border-b border-neutral-200 pb-2 mb-3",
     template === "minimal" &&
       level === 2 &&
-      "text-sm font-semibold uppercase tracking-widest text-canvas-foreground/70 mt-6 mb-2",
+      "text-sm font-semibold uppercase tracking-widest text-neutral-600 mt-6 mb-2",
     template === "minimal" &&
       level === 3 &&
       "text-base font-semibold mt-3 mb-1",
@@ -71,13 +71,13 @@ export function resumeHeadingClasses(
       "text-3xl font-semibold text-center mb-1",
     template === "classic" &&
       level === 2 &&
-      "text-sm font-bold uppercase border-b border-canvas-foreground/25 pb-1 mt-5 mb-2",
+      "text-sm font-bold uppercase border-b border-neutral-300 pb-1 mt-5 mb-2",
     template === "classic" &&
       level === 3 &&
       "text-base font-semibold italic mt-2",
     template === "modern" &&
       level === 1 &&
-      "text-3xl font-bold text-canvas-foreground mb-2",
+      "text-3xl font-bold text-neutral-900 mb-2",
     template === "modern" &&
       level === 2 &&
       "text-xs uppercase tracking-[0.2em] text-amber-700 mt-6 mb-2",
@@ -86,19 +86,19 @@ export function resumeHeadingClasses(
       "text-base font-semibold mt-2",
     template === "executive" &&
       level === 1 &&
-      "text-2xl font-semibold tracking-tight border-b-2 border-canvas-foreground/25 pb-3 mb-4",
+      "text-2xl font-semibold tracking-tight border-b-2 border-neutral-300 pb-3 mb-4",
     template === "executive" &&
       level === 2 &&
-      "text-[11px] font-bold uppercase tracking-[0.2em] text-canvas-foreground/65 mt-7 mb-2",
+      "text-[11px] font-bold uppercase tracking-[0.2em] text-neutral-600 mt-7 mb-2",
     template === "executive" &&
       level === 3 &&
       "text-sm font-semibold mt-3 mb-1",
     template === "compact" &&
       level === 1 &&
-      "text-xl font-semibold tracking-tight border-b border-canvas-foreground/20 pb-1.5 mb-2",
+      "text-xl font-semibold tracking-tight border-b border-neutral-200 pb-1.5 mb-2",
     template === "compact" &&
       level === 2 &&
-      "text-[10px] font-bold uppercase tracking-widest text-canvas-foreground/60 mt-4 mb-1",
+      "text-[10px] font-bold uppercase tracking-widest text-neutral-600 mt-4 mb-1",
     template === "compact" &&
       level === 3 &&
       "text-sm font-semibold mt-2 mb-0.5",
@@ -121,7 +121,7 @@ export function resumeParagraphClasses(
   const body = resumeBodyFontClass(preset);
   return cn(
     body,
-    "leading-relaxed text-canvas-foreground/90 mb-2",
+    "leading-relaxed text-neutral-800 mb-2",
     template === "compact" ? "text-xs leading-snug" : "text-sm",
     template === "modern" && "text-[15px] leading-[1.55]"
   );
@@ -135,7 +135,7 @@ export function resumeListClasses(
   const body = resumeBodyFontClass(preset);
   return cn(
     ordered ? "list-decimal" : "list-disc",
-    "pl-5 space-y-1 mb-3 text-canvas-foreground/90",
+    "pl-5 space-y-1 mb-3 text-neutral-800",
     template === "compact" ? "text-xs leading-snug" : "text-sm",
     body,
     template === "modern" && !ordered && "marker:text-amber-600"

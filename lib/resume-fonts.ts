@@ -54,14 +54,6 @@ export const RESUME_FONT_PRESETS: Record<
   },
 };
 
-export const RESUME_FONT_PRESET_ORDER: ResumeFontPreset[] = [
-  "lora_playfair",
-  "merriweather_cinzel",
-  "source_serif",
-  "ibm_plex_serif",
-  "crimson_fraunces",
-];
-
 export function resolveFontPreset(
   preset: ResumeFontPreset | undefined | null
 ): ResumeFontPreset {
@@ -69,15 +61,21 @@ export function resolveFontPreset(
   return DEFAULT_RESUME_FONT_PRESET;
 }
 
-/** Single Google Fonts URL for PDF (loads all families). */
+/**
+ * Google Fonts URL for PDF HTML. Keep weights in sync with `app/layout.tsx`
+ * `next/font` choices so Puppeteer renders closer to the live preview.
+ * Includes Inter — UI + Modern template H2 (`font-sans`) match the preview.
+ */
 export const RESUME_PDF_GOOGLE_FONTS_HREF =
   "https://fonts.googleapis.com/css2?" +
   [
+    "family=Inter:wght@400;500;600;700",
     "family=Cinzel:wght@500;600;700",
     "family=Crimson+Pro:ital,wght@0,400;0,600;1,400",
     "family=Fraunces:ital,wght@0,500;0,600;0,700;1,500",
     "family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400",
-    "family=Lora:ital,wght@0,400;0,600;1,400",
+    // Match next/font Lora: weights 400,600,700 + italics
+    "family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600",
     "family=Merriweather:ital,wght@0,400;0,700;1,400",
     "family=Playfair+Display:ital,wght@0,600;0,700;1,600",
     "family=Source+Serif+4:ital,wght@0,400;0,600;1,400",

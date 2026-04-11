@@ -3,6 +3,10 @@ import type { JSONContent } from "@tiptap/core";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { buildResumePdfHtml } from "@/lib/render-pdf-html";
+import {
+  resolveLocalChromeExecutable,
+  shouldUseSparticuzChromium,
+} from "@/lib/resolve-chrome-executable";
 import type { PaperSize, ResumeFontPreset, ResumeTemplate } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -41,8 +45,6 @@ export async function POST(req: Request) {
     headerName: body.headerName,
   });
 
-  const localChrome = process.env.CHROME_EXECUTABLE_PATH;
-
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | undefined;
   try {
     const localArgs = [
@@ -51,12 +53,34 @@ export async function POST(req: Request) {
       "--disable-dev-shm-usage",
       "--font-render-hinting=none",
     ];
-    browser = await puppeteer.launch({
-      args: localChrome ? localArgs : chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: localChrome ?? (await chromium.executablePath()),
-      headless: localChrome ? true : chromium.headless,
-    });
+
+    const localChrome = resolveLocalChromeExecutable();
+
+    if (localChrome) {
+      browser = await puppeteer.launch({
+        executablePath: localChrome,
+        headless: true,
+        args: localArgs,
+        defaultViewport: chromium.defaultViewport,
+      });
+    } else if (shouldUseSparticuzChromium()) {
+      browser = await puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+      });
+    } else {
+      return NextResponse.json(
+        {
+          error:
+            "PDF needs a Chromium-based browser. Install Google Chrome or Brave " +
+            "(e.g. macOS: Brave in /Applications/Brave Browser.app) or set " +
+            "CHROME_EXECUTABLE_PATH to the browser binary.",
+        },
+        { status: 503 }
+      );
+    }
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0", timeout: 45_000 });

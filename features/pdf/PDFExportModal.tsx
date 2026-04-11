@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { JSONContent } from "@tiptap/core";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import type { PaperSize, ResumeFontPreset, ResumeTemplate } from "@/lib/types";
+import type { PaperSize, ResumeTemplate } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -23,7 +23,6 @@ export function PDFExportModal({
   onOpenChange,
   content,
   template,
-  fontPreset,
   defaultFileName,
   headerName,
 }: {
@@ -31,7 +30,6 @@ export function PDFExportModal({
   onOpenChange: (o: boolean) => void;
   content: JSONContent;
   template: ResumeTemplate;
-  fontPreset?: ResumeFontPreset | null;
   defaultFileName: string;
   headerName: string;
 }) {
@@ -55,7 +53,6 @@ export function PDFExportModal({
         body: JSON.stringify({
           content,
           template,
-          fontPreset,
           paperSize,
           includeHeader,
           includePageNumbers,
@@ -89,9 +86,10 @@ export function PDFExportModal({
         <DialogHeader>
           <DialogTitle>Export PDF</DialogTitle>
           <DialogDescription id="pdf-export-desc">
-            Renders your preview as a text-selectable PDF. On Vercel, ensure
-            serverless limits allow Puppeteer; set CHROME_EXECUTABLE_PATH
-            locally if needed.
+            Renders your preview as a text-selectable PDF. On macOS/Windows, the
+            app uses Google Chrome, Brave, or Chromium if installed. On Linux
+            serverless (e.g. Vercel), it uses bundled Chromium. Override with
+            CHROME_EXECUTABLE_PATH if needed.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">

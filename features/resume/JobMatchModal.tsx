@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { JSONContent } from "@tiptap/core";
 import { toast } from "sonner";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, X, Link2 } from "lucide-react";
 import { generateJson } from "@/features/ai/gemini";
 import {
   RELEVANCE_SYSTEM,
@@ -15,7 +15,11 @@ import {
 import { useAppStore } from "@/stores/useAppStore";
 import { generateId } from "@/lib/utils";
 import type { ResumeVersion } from "@/lib/types";
-import { DEFAULT_RESUME_FONT_PRESET } from "@/lib/resume-fonts";
+import {
+  detectJobBoard,
+  isValidJobUrl,
+  supportedBoardsHint,
+} from "@/lib/jobBoards";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +42,14 @@ type Relevance = {
   missing_keywords: string[];
   strengths: string[];
   gaps: string[];
+};
+
+type ParseApiSuccess = { success: true; data: Record<string, unknown> };
+type ParseApiErr = {
+  success: false;
+  code?: string;
+  error?: string;
+  fallbackPlainText?: string;
 };
 
 function scoreColor(score: number) {
@@ -86,34 +98,229 @@ function Ring({ score }: { score: number }) {
   );
 }
 
+function asStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter((x): x is string => typeof x === "string" && x.trim().length > 0);
+}
+
+function buildJdFromParsed(d: Record<string, unknown>): string {
+  const desc =
+    typeof d.jobDescription === "string" && d.jobDescription.trim()
+      ? d.jobDescription.trim()
+      : "";
+  const parts: string[] = [];
+  if (desc) parts.push(desc);
+  const resp = asStringArray(d.responsibilities);
+  if (resp.length) {
+    parts.push(
+      "Responsibilities:\n" + resp.map((x) => `- ${x}`).join("\n")
+    );
+  }
+  const qual = asStringArray(d.qualifications);
+  if (qual.length) {
+    parts.push(
+      "Qualifications:\n" + qual.map((x) => `- ${x}`).join("\n")
+    );
+  }
+  const meta: string[] = [];
+  if (typeof d.location === "string" && d.location.trim()) {
+    meta.push(`Location: ${d.location.trim()}`);
+  }
+  if (typeof d.jobType === "string" && d.jobType.trim()) {
+    meta.push(`Job type: ${d.jobType.trim()}`);
+  }
+  if (typeof d.experienceLevel === "string" && d.experienceLevel.trim()) {
+    meta.push(`Experience: ${d.experienceLevel.trim()}`);
+  }
+  if (typeof d.salary === "string" && d.salary.trim()) {
+    meta.push(`Salary: ${d.salary.trim()}`);
+  }
+  if (meta.length) parts.push(meta.join("\n"));
+  return parts.join("\n\n");
+}
+
+function buildJobContext(
+  jd: string,
+  required: string[],
+  nice: string[]
+): string {
+  const parts: string[] = [];
+  if (jd.trim()) parts.push(jd.trim());
+  if (required.length) {
+    parts.push(
+      "Required skills:\n" + required.map((s) => `- ${s}`).join("\n")
+    );
+  }
+  if (nice.length) {
+    parts.push(
+      "Nice to have skills:\n" + nice.map((s) => `- ${s}`).join("\n")
+    );
+  }
+  return parts.join("\n\n---\n\n");
+}
+
+function SkillPills({
+  label,
+  items,
+  onRemove,
+}: {
+  label: string;
+  items: string[];
+  onRemove: (s: string) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="grid gap-2">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <div className="flex flex-wrap gap-2" role="list">
+        {items.map((s, i) => (
+          <Badge
+            key={`${s}-${i}`}
+            variant="secondary"
+            className="gap-1 pr-1 pl-2 py-1 font-normal"
+            role="listitem"
+          >
+            <span className="max-w-[200px] truncate">{s}</span>
+            <button
+              type="button"
+              className="rounded-sm p-0.5 hover:bg-muted cursor-pointer"
+              aria-label={`Remove ${s}`}
+              onClick={() => onRemove(s)}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function JobMatchModal({
   open,
   onOpenChange,
   version,
   apiKey,
+  geminiModelId,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   version: ResumeVersion | null;
   apiKey: string;
+  geminiModelId?: string;
 }) {
   const router = useRouter();
+  const jdRef = useRef<HTMLTextAreaElement>(null);
 
+  const [jobUrl, setJobUrl] = useState("");
+  const [urlError, setUrlError] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [jd, setJd] = useState("");
+  const [requiredSkills, setRequiredSkills] = useState<string[]>([]);
+  const [niceSkills, setNiceSkills] = useState<string[]>([]);
+  const [fetchLoading, setFetchLoading] = useState(false);
   const [loading, setLoading] = useState<"score" | "tailor" | null>(null);
   const [relevance, setRelevance] = useState<Relevance | null>(null);
 
-  const reset = () => {
+  const board = jobUrl.trim() ? detectJobBoard(jobUrl.trim()) : null;
+
+  const fullReset = () => {
     setRelevance(null);
     setLoading(null);
+    setFetchLoading(false);
+    setJobUrl("");
+    setUrlError("");
+    setJobTitle("");
+    setCompanyName("");
+    setJd("");
+    setRequiredSkills([]);
+    setNiceSkills([]);
+  };
+
+  const jobContext = () => buildJobContext(jd, requiredSkills, niceSkills);
+
+  const fetchJobFromUrl = async () => {
+    setUrlError("");
+    const u = jobUrl.trim();
+    if (!u) {
+      setUrlError("Enter a job posting URL.");
+      return;
+    }
+    if (!isValidJobUrl(u)) {
+      setUrlError(
+        `Supported boards: ${supportedBoardsHint()}. Use a full job posting URL.`
+      );
+      return;
+    }
+    if (!apiKey) {
+      toast.error("Add your Gemini API key in Settings.");
+      return;
+    }
+
+    setFetchLoading(true);
+    try {
+      const res = await fetch("/api/parse-job-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: u,
+          geminiApiKey: apiKey,
+          modelId: geminiModelId,
+        }),
+      });
+
+      const json = (await res.json()) as ParseApiSuccess | ParseApiErr;
+
+      if (!res.ok || !json.success) {
+        const err = json as ParseApiErr;
+        const msg =
+          err.error ||
+          "Could not fetch job details. Try pasting the description manually.";
+        if (err.code === "LINKEDIN_BLOCKED") {
+          toast.error(msg);
+          jdRef.current?.focus();
+        } else if (err.code === "LOGIN_REQUIRED") {
+          toast.error(msg);
+          if (err.fallbackPlainText) {
+            setJd(err.fallbackPlainText);
+            toast.message("Loaded partial page text into the description field.");
+          }
+        } else if (err.fallbackPlainText) {
+          setJd(err.fallbackPlainText);
+          toast.error(msg);
+        } else {
+          toast.error(msg);
+        }
+        return;
+      }
+
+      const d = json.data;
+      if (typeof d.jobTitle === "string" && d.jobTitle.trim()) {
+        setJobTitle(d.jobTitle.trim());
+      }
+      if (typeof d.companyName === "string" && d.companyName.trim()) {
+        setCompanyName(d.companyName.trim());
+      }
+      setRequiredSkills(asStringArray(d.requiredSkills));
+      setNiceSkills(asStringArray(d.niceToHaveSkills));
+      const built = buildJdFromParsed(d);
+      if (built.trim()) {
+        setJd(built);
+      }
+      toast.success("Job details fetched!");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Request failed");
+    } finally {
+      setFetchLoading(false);
+    }
   };
 
   const analyze = async () => {
     if (!version) return;
-    if (!jobTitle.trim() || !jd.trim()) {
-      toast.error("Job title and job description are required.");
+    const ctx = jobContext();
+    if (!jobTitle.trim() || !ctx.trim()) {
+      toast.error("Job title and job description (or fetched content) are required.");
       return;
     }
     setLoading("score");
@@ -123,7 +330,8 @@ export function JobMatchModal({
       const data = await generateJson<Relevance>(
         apiKey,
         RELEVANCE_SYSTEM,
-        RELEVANCE_USER(plain, jobTitle, companyName, jd)
+        RELEVANCE_USER(plain, jobTitle, companyName, ctx),
+        geminiModelId
       );
       setRelevance(data);
     } catch (e) {
@@ -135,6 +343,7 @@ export function JobMatchModal({
 
   const tailor = async () => {
     if (!version || !relevance) return;
+    const ctx = jobContext();
     setLoading("tailor");
     try {
       const jsonStr = JSON.stringify(version.content);
@@ -145,10 +354,11 @@ export function JobMatchModal({
           jsonStr,
           jobTitle,
           companyName,
-          jd,
+          ctx,
           relevance.matched_keywords ?? [],
           relevance.missing_keywords ?? []
-        )
+        ),
+        geminiModelId
       );
       if (!data?.content || data.content.type !== "doc") {
         throw new Error("Invalid tailored document from model");
@@ -160,7 +370,6 @@ export function JobMatchModal({
         title: data.title?.trim() || `AI Tailored — ${jobTitle}`,
         content: data.content,
         template: version.template,
-        fontPreset: version.fontPreset ?? DEFAULT_RESUME_FONT_PRESET,
         atsScore: null,
         grammarScore: null,
         isTailored: true,
@@ -176,7 +385,7 @@ export function JobMatchModal({
       await useAppStore.getState().loadVersionsForFolder(version.folderId);
       toast.success("Tailored version created");
       onOpenChange(false);
-      reset();
+      fullReset();
       router.push(`/resume/${nv.id}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Tailoring failed");
@@ -189,7 +398,7 @@ export function JobMatchModal({
     <Dialog
       open={open}
       onOpenChange={(o) => {
-        if (!o) reset();
+        if (!o) fullReset();
         onOpenChange(o);
       }}
     >
@@ -197,12 +406,65 @@ export function JobMatchModal({
         <DialogHeader>
           <DialogTitle>Tailor for job</DialogTitle>
           <DialogDescription>
-            Score fit against a job description, then generate a new tailored
-            version. Your original version is never overwritten.
+            Fetch a posting URL or paste a description, then score fit and
+            generate a tailored version. Your original resume is never
+            overwritten.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3 py-2">
+          <div className="grid gap-2">
+            <Label htmlFor="jm-url">Paste job URL (LinkedIn, Indeed, …)</Label>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+              <Input
+                id="jm-url"
+                type="url"
+                value={jobUrl}
+                onChange={(e) => {
+                  setJobUrl(e.target.value);
+                  setUrlError("");
+                }}
+                placeholder="https://…"
+                className="sm:flex-1"
+                aria-invalid={!!urlError}
+                aria-describedby={urlError ? "jm-url-err" : undefined}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                className="cursor-pointer gap-2 shrink-0"
+                disabled={fetchLoading || loading !== null}
+                onClick={() => void fetchJobFromUrl()}
+                aria-busy={fetchLoading}
+              >
+                {fetchLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Link2 className="h-4 w-4" />
+                )}
+                Fetch job details
+              </Button>
+            </div>
+            {board && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <span aria-hidden>Detected:</span>
+                  <Badge
+                    className="border-0 font-medium text-white"
+                    style={{ backgroundColor: board.color }}
+                  >
+                    {board.name}
+                  </Badge>
+                </span>
+              </div>
+            )}
+            {urlError && (
+              <p id="jm-url-err" className="text-xs text-destructive" role="alert">
+                {urlError}
+              </p>
+            )}
+          </div>
+
           <div className="grid gap-2">
             <Label htmlFor="jm-title">Job title</Label>
             <Input
@@ -221,21 +483,50 @@ export function JobMatchModal({
               placeholder="Optional"
             />
           </div>
+
+          <SkillPills
+            label="Required skills (from fetch — click × to remove)"
+            items={requiredSkills}
+            onRemove={(s) =>
+              setRequiredSkills((prev) => prev.filter((x) => x !== s))
+            }
+          />
+          <SkillPills
+            label="Nice to have skills"
+            items={niceSkills}
+            onRemove={(s) => setNiceSkills((prev) => prev.filter((x) => x !== s))}
+          />
+
           <div className="grid gap-2">
             <Label htmlFor="jm-jd">Job description</Label>
-            <Textarea
-              id="jm-jd"
-              value={jd}
-              onChange={(e) => setJd(e.target.value)}
-              rows={6}
-              placeholder="Paste the job description…"
-            />
+            <div className="relative rounded-md">
+              {fetchLoading && (
+                <div
+                  className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-md bg-background/85 text-sm text-muted-foreground border border-border"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  Fetching job details…
+                </div>
+              )}
+              <Textarea
+                ref={jdRef}
+                id="jm-jd"
+                value={jd}
+                onChange={(e) => setJd(e.target.value)}
+                rows={6}
+                placeholder="Paste the job description or use Fetch above…"
+                disabled={fetchLoading}
+                className="min-h-[140px]"
+              />
+            </div>
           </div>
           <Button
             type="button"
             className="cursor-pointer w-full sm:w-auto"
             onClick={() => void analyze()}
-            disabled={loading !== null}
+            disabled={loading !== null || fetchLoading}
           >
             {loading === "score" && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -329,7 +620,7 @@ export function JobMatchModal({
                 type="button"
                 className="cursor-pointer gap-2"
                 onClick={() => void tailor()}
-                disabled={loading !== null}
+                disabled={loading !== null || fetchLoading}
               >
                 {loading === "tailor" && (
                   <Loader2 className="h-4 w-4 animate-spin" />

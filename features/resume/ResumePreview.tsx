@@ -33,7 +33,7 @@ function Marks({
       el = (
         <a
           href={String(m.attrs.href)}
-          className="text-canvas-foreground/80 underline underline-offset-2"
+          className="text-neutral-700 underline underline-offset-2"
         >
           {el}
         </a>
@@ -67,7 +67,7 @@ function NodeView({
 
   switch (node.type) {
     case "doc":
-      return <div className="resume-doc">{kids}</div>;
+      return <div className="resume-doc text-neutral-900">{kids}</div>;
     case "text":
       return <Marks marks={node.marks}>{node.text ?? ""}</Marks>;
     case "heading": {
@@ -92,12 +92,12 @@ function NodeView({
         <ol className={resumeListClasses(template, fp, true)}>{kids}</ol>
       );
     case "listItem":
-      return <li>{kids}</li>;
+      return <li className="text-neutral-800">{kids}</li>;
     case "horizontalRule":
       return (
         <hr
           className={cn(
-            "my-4 border-canvas-foreground/20",
+            "my-4 border-neutral-200",
             showSectionDividers === false && "hidden"
           )}
         />
@@ -116,7 +116,9 @@ function NodeView({
       );
     default:
       return (
-        <div className={cn(resumeBodyFontClass(fp), "text-sm")}>{kids}</div>
+        <div className={cn(resumeBodyFontClass(fp), "text-sm text-neutral-800")}>
+          {kids}
+        </div>
       );
   }
 }
@@ -124,17 +126,15 @@ function NodeView({
 export function ResumePreview({
   content,
   template,
-  fontPreset,
   showSectionDividers = true,
   className,
 }: {
   content: JSONContent;
   template: ResumeTemplate;
-  fontPreset?: ResumeFontPreset | null;
   showSectionDividers?: boolean;
   className?: string;
 }) {
-  const fp = resolveFontPreset(fontPreset);
+  const fp = resolveFontPreset(undefined);
   return (
     <div
       className={resumePaperClasses(template, className)}

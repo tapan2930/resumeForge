@@ -39,7 +39,7 @@ import {
   GRAMMAR_SYSTEM,
   GRAMMAR_USER,
 } from "@/lib/prompts";
-import { getGeminiApiKey } from "@/lib/storage";
+import { getGeminiApiKey, getResolvedGeminiModel } from "@/lib/storage";
 import {
   clientAtsSignals,
   replaceFirstTextInDoc,
@@ -47,16 +47,7 @@ import {
 } from "@/lib/tiptap-helpers";
 import { extractResumeName } from "@/lib/extract-name";
 import { generateId } from "@/lib/utils";
-import type {
-  ResumeFontPreset,
-  ResumeTemplate,
-  ResumeVersion,
-} from "@/lib/types";
-import {
-  DEFAULT_RESUME_FONT_PRESET,
-  RESUME_FONT_PRESETS,
-  RESUME_FONT_PRESET_ORDER,
-} from "@/lib/resume-fonts";
+import type { ResumeTemplate, ResumeVersion } from "@/lib/types";
 import {
   RESUME_TEMPLATE_IDS,
   RESUME_TEMPLATE_LABELS,
@@ -78,7 +69,6 @@ export default function ResumePage() {
   const id = params?.id;
   const router = useRouter();
   const folders = useAppStore((s) => s.folders);
-  const getVersionById = useAppStore((s) => s.getVersionById);
   const updateVersion = useAppStore((s) => s.updateVersion);
 
   const [version, setVersion] = useState<ResumeVersion | null>(null);
@@ -87,9 +77,6 @@ export default function ResumePage() {
     null
   );
   const [template, setTemplate] = useState<ResumeTemplate>("minimal");
-  const [fontPreset, setFontPreset] = useState<ResumeFontPreset>(
-    DEFAULT_RESUME_FONT_PRESET
-  );
   const [loading, setLoading] = useState(true);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -114,19 +101,13 @@ export default function ResumePage() {
   );
 
   const persist = useCallback(
-    async (
-      v: ResumeVersion,
-      json: JSONContent,
-      tmpl: ResumeTemplate,
-      fp: ResumeFontPreset
-    ) => {
+    async (v: ResumeVersion, json: JSONContent, tmpl: ResumeTemplate) => {
       if (!v) return;
       setSaving(true);
       try {
         await updateVersion(v.id, {
           content: json,
           template: tmpl,
-          fontPreset: fp,
         });
         setSavedAt(new Date().toISOString());
       } catch (e) {
@@ -139,10 +120,11 @@ export default function ResumePage() {
   );
 
   useEffect(() => {
+    if (!id) return;
     let cancelled = false;
+    setLoading(true);
     void (async () => {
-      if (!id) return;
-      const v = await getVersionById(id);
+      const v = await useAppStore.getState().getVersionById(id);
       if (cancelled) return;
       if (!v) {
         toast.error("Resume not found");
@@ -153,7 +135,6 @@ export default function ResumePage() {
       setContent(v.content);
       setPreviewContent(v.content);
       setTemplate(v.template);
-      setFontPreset(v.fontPreset ?? DEFAULT_RESUME_FONT_PRESET);
       setGrammarScore(v.grammarScore);
       setAtsScore(v.atsScore);
       setLoading(false);
@@ -161,12 +142,15 @@ export default function ResumePage() {
     return () => {
       cancelled = true;
     };
-  }, [id, getVersionById, router]);
+    // Only re-load when the resume id changes. Do not depend on `router` or store
+    // action refs — re-running would reset template from IDB over local edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- router.push stable; omit to avoid loops
+  }, [id]);
 
   const doSave = useCallback(async () => {
     if (!version || !content) return;
-    await persist(version, content, template, fontPreset);
-  }, [version, content, template, fontPreset, persist]);
+    await persist(version, content, template);
+  }, [version, content, template, persist]);
 
   useEffect(() => {
     if (!version || loading) return;
@@ -354,32 +338,12 @@ export default function ResumePage() {
                   <DropdownMenuItem
                     key={t}
                     className="cursor-pointer"
-                    onClick={() => setTemplate(t)}
+                    onSelect={() => {
+                      setTemplate(t);
+                      setVersion((prev) => (prev ? { ...prev, template: t } : prev));
+                    }}
                   >
                     {RESUME_TEMPLATE_LABELS[t]}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer border-border max-w-[160px] truncate sm:max-w-[200px]"
-                  aria-label="Resume fonts"
-                >
-                  Font: {RESUME_FONT_PRESETS[fontPreset].label}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto w-64">
-                {RESUME_FONT_PRESET_ORDER.map((fid) => (
-                  <DropdownMenuItem
-                    key={fid}
-                    className="cursor-pointer"
-                    onClick={() => setFontPreset(fid)}
-                  >
-                    {RESUME_FONT_PRESETS[fid].label}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -430,12 +394,8 @@ export default function ResumePage() {
                 <div className="border-b border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground">
                   Live preview
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-4 bg-[#141414]">
-                  <ResumePreview
-                    content={previewContent}
-                    template={template}
-                    fontPreset={fontPreset}
-                  />
+                <div className="min-h-0 flex-1 overflow-y-auto p-4 bg-zinc-100 text-neutral-900">
+                  <ResumePreview content={previewContent} template={template} />
                 </div>
               </div>
             </Panel>
@@ -459,6 +419,7 @@ export default function ResumePage() {
         onOpenChange={setJobOpen}
         version={version}
         apiKey={getGeminiApiKey() ?? ""}
+        geminiModelId={getResolvedGeminiModel()}
       />
 
       <PDFExportModal
@@ -466,7 +427,6 @@ export default function ResumePage() {
         onOpenChange={setPdfOpen}
         content={previewContent}
         template={template}
-        fontPreset={fontPreset}
         defaultFileName={pdfName}
         headerName={headerName}
       />

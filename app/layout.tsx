@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import {
-  IBM_Plex_Mono,
+  Inter,
   IBM_Plex_Serif,
   Lora,
   Playfair_Display,
@@ -14,10 +14,11 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { HydrateStore } from "@/components/hydrate-store";
 
-const ibm = IBM_Plex_Mono({
+/** App UI + editor + Modern template accents (sans-serif, not monospace). */
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-ibm-plex-mono",
-  weight: ["400", "500", "600"],
+  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
 });
 
 const lora = Lora({
@@ -87,7 +88,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${ibm.variable} ${lora.variable} ${playfair.variable} ${merriweather.variable} ${cinzel.variable} ${sourceSerif.variable} ${ibmSerif.variable} ${crimson.variable} ${fraunces.variable} font-sans min-h-screen bg-background antialiased`}
+        className={`${inter.variable} ${lora.variable} ${playfair.variable} ${merriweather.variable} ${cinzel.variable} ${sourceSerif.variable} ${ibmSerif.variable} ${crimson.variable} ${fraunces.variable} font-sans min-h-screen bg-background antialiased`}
       >
         <Providers>
           <HydrateStore />
