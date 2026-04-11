@@ -496,22 +496,25 @@ export default function TemplateBuilderPage() {
     return template.nodes[activeNode]?.html ?? "";
   }, [template, activeNode]);
 
-  const updateActiveHtml = (val: string) => {
-    if (!template) return;
-    setTemplate((prev) => {
-      if (!prev) return null;
-      const next = { ...prev };
-      if (activeNode === "section") {
-        next.nodes.section.default.html = val;
-      } else if (activeNode.includes(":")) {
-        next.nodes.overrides[activeNode] = { html: val };
-      } else {
-        // @ts-ignore
-        next.nodes[activeNode] = { html: val };
-      }
-      return next;
-    });
-  };
+  const updateActiveHtml = useCallback(
+    (val: string) => {
+      if (!template) return;
+      setTemplate((prev) => {
+        if (!prev) return null;
+        const next = { ...prev };
+        if (activeNode === "section") {
+          next.nodes.section.default.html = val;
+        } else if (activeNode.includes(":")) {
+          next.nodes.overrides[activeNode] = { html: val };
+        } else {
+          // @ts-ignore
+          next.nodes[activeNode] = { html: val };
+        }
+        return next;
+      });
+    },
+    [activeNode, template]
+  );
 
   const getFormattedHtml = useCallback((raw: string) => {
     if (!raw) return "";
@@ -548,7 +551,7 @@ export default function TemplateBuilderPage() {
     const raw = getActiveHtml();
     if (!raw) return;
     updateActiveHtml(getFormattedHtml(raw));
-  }, [getActiveHtml, getFormattedHtml]);
+  }, [getActiveHtml, getFormattedHtml, updateActiveHtml]);
 
   // 1. Instant format when switching nodes
   useEffect(() => {
@@ -574,7 +577,7 @@ export default function TemplateBuilderPage() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [template, activeNode, getFormattedHtml]); // template dependency handles typing
+  }, [template, activeNode, getFormattedHtml, getActiveHtml, updateActiveHtml]); // template dependency handles typing
 
   const onAddOverride = () => {
     const identifier = newOverrideType.trim().toLowerCase();
@@ -848,7 +851,7 @@ export default function TemplateBuilderPage() {
                         <div className="text-[10px] text-muted-foreground italic">
                           Tip: Use inline styles like{" "}
                           <code className="bg-secondary px-1 rounded">
-                            style="color: red;"
+                            style=&quot;color: red;&quot;
                           </code>{" "}
                           for PDF parity.
                         </div>
@@ -884,9 +887,8 @@ export default function TemplateBuilderPage() {
                                 onClick={() => insertCssProp(prop)}
                               >
                                 {prop}
-                              }
-                            </Button>
-                          ))}
+                              </Button>
+                            ))}
                         </div>
                       </ScrollArea>
                     </div>
