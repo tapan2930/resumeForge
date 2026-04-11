@@ -7,7 +7,12 @@ import {
   resolveLocalChromeExecutable,
   shouldUseSparticuzChromium,
 } from "@/lib/resolve-chrome-executable";
-import type { PaperSize, ResumeFontPreset, ResumeTemplate } from "@/lib/types";
+import type {
+  MarginSettings,
+  PaperSize,
+  ResumeFontPreset,
+  ResumeTemplate,
+} from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,6 +21,8 @@ type Body = {
   content: JSONContent;
   template: ResumeTemplate;
   fontPreset?: ResumeFontPreset | null;
+  margins?: MarginSettings;
+  linkSettings?: LinkSettings;
   paperSize: PaperSize;
   includeHeader: boolean;
   includePageNumbers: boolean;
@@ -39,6 +46,8 @@ export async function POST(req: Request) {
     content: body.content,
     template: body.template,
     fontPreset: body.fontPreset,
+    margins: body.margins,
+    linkSettings: body.linkSettings,
     paperSize: body.paperSize ?? "letter",
     includeHeader: body.includeHeader ?? true,
     includeSectionDividers: body.includeSectionDividers ?? true,
@@ -95,10 +104,10 @@ export async function POST(req: Request) {
         ? `<div style="width:100%;font-size:9px;text-align:center;font-family:system-ui,sans-serif;color:#888;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>`
         : "<span></span>",
       margin: {
-        top: "0.45in",
-        bottom: body.includePageNumbers ? "0.7in" : "0.45in",
-        left: "0.45in",
-        right: "0.45in",
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
       },
     });
 

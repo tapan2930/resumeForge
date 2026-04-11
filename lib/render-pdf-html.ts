@@ -1,10 +1,16 @@
 import type { JSONContent } from "@tiptap/core";
-import type { PaperSize, ResumeFontPreset, ResumeTemplate } from "@/lib/types";
+import type {
+  MarginSettings,
+  PaperSize,
+  ResumeFontPreset,
+  ResumeTemplate,
+} from "@/lib/types";
 import {
   RESUME_FONT_PRESETS,
   RESUME_PDF_GOOGLE_FONTS_HREF,
   resolveFontPreset,
 } from "@/lib/resume-fonts";
+import { resolveMargins } from "@/lib/margins";
 
 function esc(s: string) {
   return s
@@ -16,7 +22,8 @@ function esc(s: string) {
 
 function marksHtml(
   marks: JSONContent["marks"] | undefined,
-  text: string
+  text: string,
+  linkSettings?: LinkSettings
 ): string {
   let out = esc(text);
   if (!marks?.length) return out;
@@ -25,8 +32,14 @@ function marksHtml(
     else if (m.type === "italic") out = `<em>${out}</em>`;
     else if (m.type === "underline")
       out = `<span style="text-decoration:underline">${out}</span>`;
-    else if (m.type === "link" && m.attrs?.href)
-      out = `<a href="${esc(String(m.attrs.href))}">${out}</a>`;
+    else if (m.type === "link" && m.attrs?.href) {
+      const color = linkSettings?.color || "inherit";
+      const decoration =
+        linkSettings?.underline !== false ? "underline" : "none";
+      out = `<a href="${esc(
+        String(m.attrs.href)
+      )}" style="color:${color};text-decoration:${decoration}">${out}</a>`;
+    }
   }
   return out;
 }
@@ -117,7 +130,7 @@ function nodeHtml(
   node: JSONContent,
   template: ResumeTemplate,
   fontPreset: ResumeFontPreset,
-  opts: { sectionDividers: boolean }
+  opts: { sectionDividers: boolean; linkSettings?: LinkSettings }
 ): string {
   const kids =
     node.content?.map((c) => nodeHtml(c, template, fontPreset, opts)).join("") ??
@@ -130,7 +143,7 @@ function nodeHtml(
     case "doc":
       return kids;
     case "text":
-      return marksHtml(node.marks, node.text ?? "");
+      return marksHtml(node.marks, node.text ?? "", opts.linkSettings);
     case "heading": {
       const level = (node.attrs?.level as number) ?? 1;
       const styles = pdfHeadingStyle(template, level, pdfBody, pdfDisplay);
@@ -167,6 +180,8 @@ export function buildResumePdfHtml(params: {
   content: JSONContent;
   template: ResumeTemplate;
   fontPreset?: ResumeFontPreset | null;
+  margins?: MarginSettings;
+  linkSettings?: LinkSettings;
   paperSize: PaperSize;
   includeHeader: boolean;
   includeSectionDividers: boolean;
@@ -176,6 +191,8 @@ export function buildResumePdfHtml(params: {
     content,
     template,
     fontPreset,
+    margins,
+    linkSettings,
     paperSize,
     includeHeader,
     includeSectionDividers,
@@ -183,13 +200,14 @@ export function buildResumePdfHtml(params: {
   } = params;
 
   const fp = resolveFontPreset(fontPreset);
+  const m = resolveMargins(template, margins);
 
   const body = nodeHtml(content, template, fp, {
     sectionDividers: includeSectionDividers,
+    linkSettings,
   });
 
   const pageSize = paperSize === "a4" ? "A4" : "Letter";
-  const margin = "0.5in";
 
   const headerBlock =
     includeHeader && headerName
@@ -202,10 +220,16 @@ export function buildResumePdfHtml(params: {
 <meta charset="utf-8"/>
 <link href="${RESUME_PDF_GOOGLE_FONTS_HREF}" rel="stylesheet"/>
 <style>
-  @page { size: ${pageSize}; margin: ${margin}; }
+  @page { size: ${pageSize}; margin: 0; }
   html { color-scheme: only light; }
   html, body { margin: 0; padding: 0; background: #ffffff; }
-  .page { box-sizing: border-box; padding: 0.4in 0.55in; min-height: 100vh; color: #1a1a1a; background: #ffffff; }
+  .page { 
+    box-sizing: border-box; 
+    padding: ${m.vertical}px ${m.horizontal}px; 
+    min-height: 100vh; 
+    color: #1a1a1a; 
+    background: #ffffff; 
+  }
 </style>
 </head>
 <body>

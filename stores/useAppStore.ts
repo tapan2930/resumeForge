@@ -150,6 +150,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       title: partial?.title ?? "Untitled version",
       content: partial?.content ?? emptyDocument,
       template: partial?.template ?? "minimal",
+      margins: { preset: "default", horizontal: 48, vertical: 48 },
+      linkSettings: { color: "#1a1a1a", underline: true },
       atsScore: null,
       grammarScore: null,
       isTailored: false,

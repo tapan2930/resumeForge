@@ -11,6 +11,9 @@ import {
   Check,
   Loader2,
   FileDown,
+  Edit2,
+  Link as LinkIcon,
+  Settings2,
 } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useAppStore, inferDefaultPdfName } from "@/stores/useAppStore";
@@ -32,6 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { generateJson } from "@/features/ai/gemini";
 import {
   ATS_SYSTEM,
@@ -47,12 +51,21 @@ import {
 } from "@/lib/tiptap-helpers";
 import { extractResumeName } from "@/lib/extract-name";
 import { generateId } from "@/lib/utils";
-import type { ResumeTemplate, ResumeVersion } from "@/lib/types";
+import type {
+  LinkSettings,
+  MarginSettings,
+  MarginPreset,
+  ResumeTemplate,
+  ResumeVersion,
+} from "@/lib/types";
 import {
   RESUME_TEMPLATE_IDS,
   RESUME_TEMPLATE_LABELS,
 } from "@/lib/resume-template-styles";
 import { useGemini } from "@/features/ai/useGemini";
+import { MARGIN_PRESET_LABELS } from "@/lib/margins";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type GrammarResponse = {
   grammarScore: number;
@@ -77,9 +90,20 @@ export default function ResumePage() {
     null
   );
   const [template, setTemplate] = useState<ResumeTemplate>("minimal");
+  const [margins, setMargins] = useState<MarginSettings>({
+    preset: "default",
+    horizontal: 48,
+    vertical: 48,
+  });
+  const [linkSettings, setLinkSettings] = useState<LinkSettings>({
+    color: "#1a1a1a",
+    underline: true,
+  });
   const [loading, setLoading] = useState(true);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState("");
 
   const [scanOpen, setScanOpen] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
@@ -101,13 +125,21 @@ export default function ResumePage() {
   );
 
   const persist = useCallback(
-    async (v: ResumeVersion, json: JSONContent, tmpl: ResumeTemplate) => {
+    async (
+      v: ResumeVersion,
+      json: JSONContent,
+      tmpl: ResumeTemplate,
+      m: MarginSettings,
+      ls: LinkSettings
+    ) => {
       if (!v) return;
       setSaving(true);
       try {
         await updateVersion(v.id, {
           content: json,
           template: tmpl,
+          margins: m,
+          linkSettings: ls,
         });
         setSavedAt(new Date().toISOString());
       } catch (e) {
@@ -132,9 +164,12 @@ export default function ResumePage() {
         return;
       }
       setVersion(v);
+      setTitleValue(v.title);
       setContent(v.content);
       setPreviewContent(v.content);
       setTemplate(v.template);
+      if (v.margins) setMargins(v.margins);
+      if (v.linkSettings) setLinkSettings(v.linkSettings);
       setGrammarScore(v.grammarScore);
       setAtsScore(v.atsScore);
       setLoading(false);
@@ -147,10 +182,29 @@ export default function ResumePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- router.push stable; omit to avoid loops
   }, [id]);
 
+  const handleRename = useCallback(async () => {
+    if (!version || !titleValue.trim()) {
+      setTitleValue(version?.title ?? "");
+      setIsEditingTitle(false);
+      return;
+    }
+    if (titleValue === version.title) {
+      setIsEditingTitle(false);
+      return;
+    }
+    try {
+      await updateVersion(version.id, { title: titleValue.trim() });
+      setVersion((v) => (v ? { ...v, title: titleValue.trim() } : v));
+      setIsEditingTitle(false);
+    } catch (e) {
+      toast.error("Rename failed");
+    }
+  }, [version, titleValue, updateVersion]);
+
   const doSave = useCallback(async () => {
     if (!version || !content) return;
-    await persist(version, content, template);
-  }, [version, content, template, persist]);
+    await persist(version, content, template, margins, linkSettings);
+  }, [version, content, template, margins, linkSettings, persist]);
 
   useEffect(() => {
     if (!version || loading) return;
@@ -308,7 +362,30 @@ export default function ResumePage() {
             </Link>
           </Button>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-sm font-semibold">{version.title}</h1>
+            {isEditingTitle ? (
+              <Input
+                autoFocus
+                className="h-7 w-full max-w-sm px-2 text-sm font-semibold"
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={handleRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRename();
+                  if (e.key === "Escape") {
+                    setTitleValue(version.title);
+                    setIsEditingTitle(false);
+                  }
+                }}
+              />
+            ) : (
+              <h1
+                className="group flex cursor-pointer items-center gap-2 truncate text-sm font-semibold"
+                onClick={() => setIsEditingTitle(true)}
+              >
+                {version.title}
+                <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+              </h1>
+            )}
             <p className="text-xs text-muted-foreground truncate">
               {folder?.name ?? "Folder"} · Auto-saves every 30s
             </p>
@@ -348,6 +425,170 @@ export default function ResumePage() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer border-border gap-1"
+                  aria-label="Margin settings"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  Margins: {MARGIN_PRESET_LABELS[margins.preset]}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 p-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none text-sm">Margins</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Set document margins for preview and PDF.
+                    </p>
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {(
+                        ["default", "minimum", "none", "custom"] as MarginPreset[]
+                      ).map((p) => (
+                        <Button
+                          key={p}
+                          size="sm"
+                          variant={margins.preset === p ? "default" : "outline"}
+                          className="cursor-pointer h-7 text-xs"
+                          onClick={() =>
+                            setMargins((prev) => ({ ...prev, preset: p }))
+                          }
+                        >
+                          {MARGIN_PRESET_LABELS[p]}
+                        </Button>
+                      ))}
+                    </div>
+                    {margins.preset === "custom" && (
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="grid gap-1">
+                          <Label
+                            htmlFor="margin-h"
+                            className="text-[10px] uppercase"
+                          >
+                            Horizontal (px)
+                          </Label>
+                          <Input
+                            id="margin-h"
+                            type="number"
+                            className="h-7 px-2 text-xs"
+                            value={margins.horizontal}
+                            onChange={(e) =>
+                              setMargins((prev) => ({
+                                ...prev,
+                                horizontal: parseInt(e.target.value) || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="grid gap-1">
+                          <Label
+                            htmlFor="margin-v"
+                            className="text-[10px] uppercase"
+                          >
+                            Vertical (px)
+                          </Label>
+                          <Input
+                            id="margin-v"
+                            type="number"
+                            className="h-7 px-2 text-xs"
+                            value={margins.vertical}
+                            onChange={(e) =>
+                              setMargins((prev) => ({
+                                ...prev,
+                                vertical: parseInt(e.target.value) || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer border-border gap-1"
+                  aria-label="Link settings"
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  Links
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none text-sm">
+                      Link Style
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Customize how hyperlinks appear.
+                    </p>
+                  </div>
+                  <div className="grid gap-3">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="link-color" className="text-xs">
+                        Color
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="link-color-picker"
+                          type="color"
+                          className="h-8 w-12 p-1 cursor-pointer"
+                          value={linkSettings.color}
+                          onChange={(e) =>
+                            setLinkSettings((prev) => ({
+                              ...prev,
+                              color: e.target.value,
+                            }))
+                          }
+                        />
+                        <Input
+                          id="link-color-hex"
+                          className="h-8 flex-1 px-2 text-xs font-mono"
+                          value={linkSettings.color}
+                          onChange={(e) =>
+                            setLinkSettings((prev) => ({
+                              ...prev,
+                              color: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Checkbox
+                        id="link-underline"
+                        checked={linkSettings.underline}
+                        onCheckedChange={(checked) =>
+                          setLinkSettings((prev) => ({
+                            ...prev,
+                            underline: !!checked,
+                          }))
+                        }
+                      />
+                      <Label
+                        htmlFor="link-underline"
+                        className="text-xs cursor-pointer font-normal"
+                      >
+                        Underline links
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button
               type="button"
               size="sm"
@@ -395,7 +636,12 @@ export default function ResumePage() {
                   Live preview
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto p-4 bg-zinc-100 text-neutral-900">
-                  <ResumePreview content={previewContent} template={template} />
+                  <ResumePreview
+                    content={previewContent}
+                    template={template}
+                    margins={margins}
+                    linkSettings={linkSettings}
+                  />
                 </div>
               </div>
             </Panel>
@@ -427,6 +673,8 @@ export default function ResumePage() {
         onOpenChange={setPdfOpen}
         content={previewContent}
         template={template}
+        margins={margins}
+        linkSettings={linkSettings}
         defaultFileName={pdfName}
         headerName={headerName}
       />

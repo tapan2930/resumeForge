@@ -1,7 +1,12 @@
 "use client";
 
 import type { JSONContent } from "@tiptap/core";
-import type { ResumeFontPreset, ResumeTemplate } from "@/lib/types";
+import type {
+  LinkSettings,
+  MarginSettings,
+  ResumeFontPreset,
+  ResumeTemplate,
+} from "@/lib/types";
 import { resolveFontPreset } from "@/lib/resume-fonts";
 import {
   resumeBodyFontClass,
@@ -12,12 +17,15 @@ import {
   resumeSectionClasses,
 } from "@/lib/resume-template-styles";
 import { cn } from "@/lib/utils";
+import { resolveMargins } from "@/lib/margins";
 
 function Marks({
   marks,
+  linkSettings,
   children,
 }: {
   marks?: JSONContent["marks"];
+  linkSettings?: LinkSettings;
   children: React.ReactNode;
 }) {
   let el: React.ReactNode = children;
@@ -33,7 +41,10 @@ function Marks({
       el = (
         <a
           href={String(m.attrs.href)}
-          className="text-neutral-700 underline underline-offset-2"
+          className={cn(
+            linkSettings?.underline !== false && "underline underline-offset-2"
+          )}
+          style={{ color: linkSettings?.color || "inherit" }}
         >
           {el}
         </a>
@@ -47,11 +58,13 @@ function NodeView({
   node,
   template,
   fontPreset,
+  linkSettings,
   showSectionDividers,
 }: {
   node: JSONContent;
   template: ResumeTemplate;
   fontPreset: ResumeFontPreset;
+  linkSettings?: LinkSettings;
   showSectionDividers?: boolean;
 }) {
   const fp = resolveFontPreset(fontPreset);
@@ -61,6 +74,7 @@ function NodeView({
       node={c}
       template={template}
       fontPreset={fp}
+      linkSettings={linkSettings}
       showSectionDividers={showSectionDividers}
     />
   ));
@@ -69,7 +83,11 @@ function NodeView({
     case "doc":
       return <div className="resume-doc text-neutral-900">{kids}</div>;
     case "text":
-      return <Marks marks={node.marks}>{node.text ?? ""}</Marks>;
+      return (
+        <Marks marks={node.marks} linkSettings={linkSettings}>
+          {node.text ?? ""}
+        </Marks>
+      );
     case "heading": {
       const level = (node.attrs?.level as number) ?? 1;
       const Tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
@@ -126,18 +144,30 @@ function NodeView({
 export function ResumePreview({
   content,
   template,
+  margins,
+  linkSettings,
   showSectionDividers = true,
   className,
 }: {
   content: JSONContent;
   template: ResumeTemplate;
+  margins?: MarginSettings;
+  linkSettings?: LinkSettings;
   showSectionDividers?: boolean;
   className?: string;
 }) {
   const fp = resolveFontPreset(undefined);
+  const m = resolveMargins(template, margins);
+
   return (
     <div
-      className={resumePaperClasses(template, className)}
+      className={cn(resumePaperClasses(template, className), "px-0 py-0")}
+      style={{
+        paddingLeft: `${m.horizontal}px`,
+        paddingRight: `${m.horizontal}px`,
+        paddingTop: `${m.vertical}px`,
+        paddingBottom: `${m.vertical}px`,
+      }}
       role="document"
       aria-label="Resume preview"
     >
@@ -145,6 +175,7 @@ export function ResumePreview({
         node={content}
         template={template}
         fontPreset={fp}
+        linkSettings={linkSettings}
         showSectionDividers={showSectionDividers}
       />
     </div>

@@ -30,6 +30,8 @@ export interface ResumeVersion {
   title: string;
   content: JSONContent;
   template: ResumeTemplate;
+  margins?: MarginSettings;
+  linkSettings?: LinkSettings;
   atsScore: number | null;
   grammarScore: number | null;
   isTailored: boolean;
@@ -43,8 +45,23 @@ export interface ResumeVersion {
 
 export type PaperSize = "letter" | "a4";
 
+export type MarginPreset = "default" | "minimum" | "none" | "custom";
+
+export interface MarginSettings {
+  preset: MarginPreset;
+  horizontal: number; // px
+  vertical: number; // px
+}
+
+export interface LinkSettings {
+  color: string;
+  underline: boolean;
+}
+
 export interface PDFExportOptions {
   paperSize: PaperSize;
+  margins?: MarginSettings;
+  linkSettings?: LinkSettings;
   includeHeader: boolean;
   includePageNumbers: boolean;
   includeSectionDividers: boolean;

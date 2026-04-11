@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Copy, FileText, Plus, Trash2 } from "lucide-react";
+import { Copy, FileText, Plus, Trash2, Edit2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ResumeVersion } from "@/lib/types";
@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 
 function atsBadgeVariant(score: number | null) {
   if (score == null) return "outline" as const;
@@ -33,11 +34,14 @@ export function VersionList() {
   const versionsCache = useAppStore((s) => s.versionsCache);
   const loadVersionsForFolder = useAppStore((s) => s.loadVersionsForFolder);
   const addVersion = useAppStore((s) => s.addVersion);
+  const updateVersion = useAppStore((s) => s.updateVersion);
   const duplicateVersion = useAppStore((s) => s.duplicateVersion);
   const removeVersion = useAppStore((s) => s.removeVersion);
   const undoDeleteVersion = useAppStore((s) => s.undoDeleteVersion);
 
   const [loading, setLoading] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renamingValue, setRenamingValue] = useState("");
 
   const activeFolder = folders.find((f) => f.id === activeFolderId);
   const versions = activeFolderId
@@ -49,6 +53,20 @@ export function VersionList() {
     setLoading(true);
     void loadVersionsForFolder(activeFolderId).finally(() => setLoading(false));
   }, [activeFolderId, loadVersionsForFolder]);
+
+  const onRename = async (v: ResumeVersion) => {
+    if (!renamingValue.trim() || renamingValue === v.title) {
+      setRenamingId(null);
+      return;
+    }
+    try {
+      await updateVersion(v.id, { title: renamingValue.trim() });
+      setRenamingId(null);
+      toast.success("Version renamed");
+    } catch (e) {
+      toast.error("Rename failed");
+    }
+  };
 
   const onDelete = async (v: ResumeVersion) => {
     await removeVersion(v.id, v.folderId);
@@ -130,14 +148,46 @@ export function VersionList() {
               <Card className="h-full transition-shadow duration-200 hover:shadow-md">
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base font-semibold leading-snug">
-                      <Link
-                        href={`/resume/${v.id}`}
-                        className="cursor-pointer hover:text-primary transition-colors duration-200 inline-flex items-start gap-2"
-                      >
-                        <FileText className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
-                        <span className="line-clamp-2">{v.title}</span>
-                      </Link>
+                    <CardTitle className="text-base font-semibold leading-snug w-full">
+                      {renamingId === v.id ? (
+                        <div className="flex items-center gap-1 w-full">
+                          <Input
+                            autoFocus
+                            size={1}
+                            className="h-8 flex-1"
+                            value={renamingValue}
+                            onChange={(e) => setRenamingValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") void onRename(v);
+                              if (e.key === "Escape") setRenamingId(null);
+                            }}
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-emerald-500"
+                            onClick={() => void onRename(v)}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-muted-foreground"
+                            onClick={() => setRenamingId(null)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/resume/${v.id}`}
+                          className="cursor-pointer hover:text-primary transition-colors duration-200 inline-flex items-start gap-2 w-full"
+                        >
+                          <FileText className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                          <span className="line-clamp-2">{v.title}</span>
+                        </Link>
+                      )}
                     </CardTitle>
                   </div>
                   <CardDescription className="text-xs">
@@ -168,6 +218,19 @@ export function VersionList() {
                       className="cursor-pointer"
                     >
                       <Link href={`/resume/${v.id}`}>Open</Link>
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="cursor-pointer gap-1"
+                      onClick={() => {
+                        setRenamingId(v.id);
+                        setRenamingValue(v.title);
+                      }}
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                      Rename
                     </Button>
                     <Button
                       type="button"
