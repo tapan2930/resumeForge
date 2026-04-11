@@ -5,6 +5,7 @@ import type { JSONContent } from "@tiptap/core";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import type {
+  CustomTemplate,
   LinkSettings,
   MarginSettings,
   PaperSize,
@@ -28,6 +29,7 @@ export function PDFExportModal({
   onOpenChange,
   content,
   template,
+  customTemplate,
   margins,
   linkSettings,
   defaultFileName,
@@ -36,7 +38,8 @@ export function PDFExportModal({
   open: boolean;
   onOpenChange: (o: boolean) => void;
   content: JSONContent;
-  template: ResumeTemplate;
+  template: ResumeTemplate | string;
+  customTemplate?: CustomTemplate;
   margins?: MarginSettings;
   linkSettings?: LinkSettings;
   defaultFileName: string;
@@ -62,6 +65,7 @@ export function PDFExportModal({
         body: JSON.stringify({
           content,
           template,
+          customTemplate,
           margins,
           linkSettings,
           paperSize,

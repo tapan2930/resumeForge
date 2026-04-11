@@ -2,7 +2,12 @@
 
 import { create } from "zustand";
 import type { JSONContent } from "@tiptap/core";
-import type { ResumeFolder, ResumeTemplate, ResumeVersion } from "@/lib/types";
+import type {
+  CustomTemplate,
+  ResumeFolder,
+  ResumeTemplate,
+  ResumeVersion,
+} from "@/lib/types";
 import { generateId } from "@/lib/utils";
 import { emptyDocument } from "@/lib/default-content";
 import {
@@ -10,10 +15,14 @@ import {
   saveFoldersToStorage,
 } from "@/lib/storage";
 import {
+  deleteTemplate,
   deleteVersion as idbDelete,
+  getTemplate,
   getVersion,
+  listAllTemplates,
   listVersionsByFolder,
   listAllVersions,
+  putTemplate,
   putVersion,
 } from "@/lib/idb";
 
@@ -27,6 +36,7 @@ interface AppState {
   folders: ResumeFolder[];
   activeFolderId: string | null;
   versionsCache: Record<string, ResumeVersion[]>;
+  customTemplates: CustomTemplate[];
   hydrated: boolean;
   lastDeleted: LastDeleted | null;
 
@@ -58,6 +68,16 @@ interface AppState {
 
   /** Recent across all folders, sorted by updatedAt desc */
   getRecentVersions: (limit?: number) => Promise<ResumeVersion[]>;
+
+  // Custom Templates
+  loadTemplates: () => Promise<void>;
+  getTemplateById: (id: string) => Promise<CustomTemplate | undefined>;
+  addTemplate: (name: string) => Promise<CustomTemplate>;
+  importCustomTemplate: (
+    template: Omit<CustomTemplate, "id" | "createdAt" | "updatedAt">
+  ) => Promise<CustomTemplate>;
+  updateTemplate: (id: string, template: CustomTemplate) => Promise<void>;
+  removeTemplate: (id: string) => Promise<void>;
 }
 
 function nowIso() {
@@ -68,6 +88,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   folders: [],
   activeFolderId: null,
   versionsCache: {},
+  customTemplates: [],
   hydrated: false,
   lastDeleted: null,
 
@@ -78,6 +99,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       hydrated: true,
       activeFolderId: folders[0]?.id ?? null,
     });
+    void get().loadTemplates();
   },
 
   setActiveFolderId: (id) => set({ activeFolderId: id }),
@@ -232,6 +254,79 @@ export const useAppStore = create<AppState>((set, get) => ({
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       )
       .slice(0, limit);
+  },
+
+  loadTemplates: async () => {
+    const list = await listAllTemplates();
+    set({ customTemplates: list });
+  },
+
+  getTemplateById: (id) => getTemplate(id),
+
+  addTemplate: async (name) => {
+    const t = nowIso();
+    const template: CustomTemplate = {
+      id: generateId(),
+      name,
+      nodes: {
+        h1: {
+          html: '<h1 style="font-size:24px; font-weight:bold; margin-bottom:12px; color:#1a1a1a;">{{content}}</h1>',
+        },
+        h2: {
+          html: '<h2 style="font-size:18px; font-weight:semibold; margin-top:20px; margin-bottom:8px; color:#444; border-bottom:1px solid #ddd; padding-bottom:4px;">{{content}}</h2>',
+        },
+        h3: {
+          html: '<h3 style="font-size:16px; font-weight:semibold; margin-top:12px; margin-bottom:4px; color:#1a1a1a;">{{content}}</h3>',
+        },
+        p: {
+          html: '<p style="font-size:14px; margin-bottom:8px; line-height:1.5; color:#333;">{{content}}</p>',
+        },
+        ul: {
+          html: '<ul style="padding-left:20px; margin-bottom:12px; list-style-type:disc;">{{content}}</ul>',
+        },
+        ol: {
+          html: '<ol style="padding-left:20px; margin-bottom:12px; list-style-type:decimal;">{{content}}</ol>',
+        },
+        li: {
+          html: '<li style="margin-bottom:4px; font-size:14px; color:#333;">{{content}}</li>',
+        },
+        section: {
+          html: '<section style="margin-bottom:16px;">{{content}}</section>',
+        },
+        page: {
+          html: '<div style="background:white; color:#1a1a1a;">{{content}}</div>',
+        },
+      },
+      createdAt: t,
+      updatedAt: t,
+    };
+    await putTemplate(template);
+    await get().loadTemplates();
+    return template;
+  },
+
+  importCustomTemplate: async (data) => {
+    const t = nowIso();
+    const template: CustomTemplate = {
+      ...data,
+      id: generateId(),
+      createdAt: t,
+      updatedAt: t,
+    };
+    await putTemplate(template);
+    await get().loadTemplates();
+    return template;
+  },
+
+  updateTemplate: async (id, template) => {
+    const next = { ...template, id, updatedAt: nowIso() };
+    await putTemplate(next);
+    await get().loadTemplates();
+  },
+
+  removeTemplate: async (id) => {
+    await deleteTemplate(id);
+    await get().loadTemplates();
   },
 }));
 

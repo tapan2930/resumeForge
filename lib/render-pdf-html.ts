@@ -1,5 +1,7 @@
 import type { JSONContent } from "@tiptap/core";
 import type {
+  CustomTemplate,
+  LinkSettings,
   MarginSettings,
   PaperSize,
   ResumeFontPreset,
@@ -126,18 +128,31 @@ function pdfListStyle(template: ResumeTemplate, bodyFont: string): string {
   return `margin:0 0 12px;padding-left:20px;font-family:${bodyFont};font-size:${compact ? "11px" : "13px"};line-height:${compact ? "1.35" : "1.45"};color:#222;`;
 }
 
-function nodeHtml(
+export function nodeHtml(
   node: JSONContent,
-  template: ResumeTemplate,
+  template: ResumeTemplate | string,
   fontPreset: ResumeFontPreset,
-  opts: { sectionDividers: boolean; linkSettings?: LinkSettings }
+  opts: {
+    sectionDividers: boolean;
+    linkSettings?: LinkSettings;
+    customTemplate?: CustomTemplate;
+    isPreview?: boolean;
+  }
 ): string {
   const kids =
-    node.content?.map((c) => nodeHtml(c, template, fontPreset, opts)).join("") ??
-    "";
+    node.content
+      ?.map((c) => nodeHtml(c, template, fontPreset, opts))
+      .join("") ?? "";
 
   const fp = resolveFontPreset(fontPreset);
   const { pdfBody, pdfDisplay } = RESUME_FONT_PRESETS[fp];
+
+  const ct = opts.customTemplate;
+
+  const wrap = (html: string, type: string) => {
+    if (!opts.isPreview) return html;
+    return `<div data-node-type="${type}" style="display: block; min-height: 1px;">${html}</div>`;
+  };
 
   switch (node.type) {
     case "doc":
@@ -146,22 +161,49 @@ function nodeHtml(
       return marksHtml(node.marks, node.text ?? "", opts.linkSettings);
     case "heading": {
       const level = (node.attrs?.level as number) ?? 1;
-      const styles = pdfHeadingStyle(template, level, pdfBody, pdfDisplay);
+      const key = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
+      if (ct) {
+        return wrap(ct.nodes[key].html.replace("{{content}}", kids), key);
+      }
+      const styles = pdfHeadingStyle(
+        template as ResumeTemplate,
+        level,
+        pdfBody,
+        pdfDisplay
+      );
       const tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
-      return `<${tag} style="${styles}">${kids}</${tag}>`;
+      return wrap(`<${tag} style="${styles}">${kids}</${tag}>`, key);
     }
     case "paragraph":
-      return `<p style="${pdfParagraphStyle(template, pdfBody)}">${kids}</p>`;
+      if (ct) return wrap(ct.nodes.p.html.replace("{{content}}", kids), "p");
+      return wrap(
+        `<p style="${pdfParagraphStyle(template as ResumeTemplate, pdfBody)}">${kids}</p>`,
+        "p"
+      );
     case "bulletList":
-      return `<ul style="${pdfListStyle(template, pdfBody)}">${kids}</ul>`;
+      if (ct) return wrap(ct.nodes.ul.html.replace("{{content}}", kids), "ul");
+      return wrap(
+        `<ul style="${pdfListStyle(template as ResumeTemplate, pdfBody)}">${kids}</ul>`,
+        "ul"
+      );
     case "orderedList":
-      return `<ol style="${pdfListStyle(template, pdfBody)}">${kids}</ol>`;
+      if (ct) return wrap(ct.nodes.ol.html.replace("{{content}}", kids), "ol");
+      return wrap(
+        `<ol style="${pdfListStyle(template as ResumeTemplate, pdfBody)}">${kids}</ol>`,
+        "ol"
+      );
     case "listItem":
-      return `<li style="margin-bottom:4px;">${kids}</li>`;
+      if (ct) return wrap(ct.nodes.li.html.replace("{{content}}", kids), "li");
+      return wrap(`<li style="margin-bottom:4px;">${kids}</li>`, "li");
     case "horizontalRule":
       if (!opts.sectionDividers) return "";
       return `<hr style="border:none;border-top:1px solid #ddd;margin:16px 0;" />`;
     case "resumeSection": {
+      if (ct)
+        return wrap(
+          ct.nodes.section.html.replace("{{content}}", kids),
+          "section"
+        );
       const thick = template !== "minimal" && template !== "compact";
       const border =
         opts.sectionDividers && thick
@@ -169,7 +211,7 @@ function nodeHtml(
           : opts.sectionDividers && template === "compact"
             ? "border-left:1px solid #f59e0b;padding-left:10px;margin-bottom:8px;"
             : "margin-bottom:8px;";
-      return `<section style="${border}">${kids}</section>`;
+      return wrap(`<section style="${border}">${kids}</section>`, "section");
     }
     default:
       return `<div style="font-family:${pdfBody};font-size:13px;">${kids}</div>`;
@@ -178,7 +220,8 @@ function nodeHtml(
 
 export function buildResumePdfHtml(params: {
   content: JSONContent;
-  template: ResumeTemplate;
+  template: ResumeTemplate | string;
+  customTemplate?: CustomTemplate;
   fontPreset?: ResumeFontPreset | null;
   margins?: MarginSettings;
   linkSettings?: LinkSettings;
@@ -190,6 +233,7 @@ export function buildResumePdfHtml(params: {
   const {
     content,
     template,
+    customTemplate,
     fontPreset,
     margins,
     linkSettings,
@@ -200,11 +244,12 @@ export function buildResumePdfHtml(params: {
   } = params;
 
   const fp = resolveFontPreset(fontPreset);
-  const m = resolveMargins(template, margins);
+  const m = resolveMargins(template as ResumeTemplate, margins);
 
   const body = nodeHtml(content, template, fp, {
     sectionDividers: includeSectionDividers,
     linkSettings,
+    customTemplate,
   });
 
   const pageSize = paperSize === "a4" ? "A4" : "Letter";
@@ -213,6 +258,13 @@ export function buildResumePdfHtml(params: {
     includeHeader && headerName
       ? `<header style="font-family:'Inter',system-ui,sans-serif;font-size:10px;color:#666;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:6px;">${esc(headerName)}</header>`
       : "";
+
+  const pageWrapper = customTemplate
+    ? customTemplate.nodes.page.html.replace(
+        "{{content}}",
+        `${headerBlock}<main>${body}</main>`
+      )
+    : `<div class="page">${headerBlock}<main>${body}</main></div>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -233,10 +285,11 @@ export function buildResumePdfHtml(params: {
 </style>
 </head>
 <body>
-  <div class="page">
-    ${headerBlock}
-    <main>${body}</main>
-  </div>
+  ${
+    customTemplate
+      ? `<div style="box-sizing: border-box; padding: ${m.vertical}px ${m.horizontal}px; min-height: 100vh;">${pageWrapper}</div>`
+      : pageWrapper
+  }
 </body>
 </html>`;
 }

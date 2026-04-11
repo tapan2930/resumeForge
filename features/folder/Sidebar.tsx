@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ChevronRight,
   FolderOpen,
+  Layout,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -77,17 +78,30 @@ export function Sidebar() {
         >
           ResumeForge
         </Link>
-        <Button
-          asChild
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 cursor-pointer"
-          aria-label="Settings"
-        >
-          <Link href="/settings">
-            <Settings className="h-4 w-4" />
-          </Link>
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 cursor-pointer"
+            aria-label="Templates"
+          >
+            <Link href="/templates">
+              <Layout className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 cursor-pointer"
+            aria-label="Settings"
+          >
+            <Link href="/settings">
+              <Settings className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="px-3 py-2">

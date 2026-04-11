@@ -13,11 +13,13 @@ export const MINIMUM_MARGINS = { horizontal: 20, vertical: 20 };
 export const NO_MARGINS = { horizontal: 0, vertical: 0 };
 
 export function resolveMargins(
-  template: ResumeTemplate,
+  template: ResumeTemplate | string,
   settings?: MarginSettings
 ): { horizontal: number; vertical: number } {
   if (!settings || settings.preset === "default") {
-    return DEFAULT_MARGINS[template];
+    return (
+      DEFAULT_MARGINS[template as ResumeTemplate] ?? DEFAULT_MARGINS.minimal
+    );
   }
   if (settings.preset === "minimum") {
     return MINIMUM_MARGINS;

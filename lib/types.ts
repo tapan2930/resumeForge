@@ -16,6 +16,28 @@ export type ResumeTemplate =
   | "compact"
   | "editorial";
 
+export interface NodeTemplate {
+  html: string; // e.g., "<h1 style='color: blue;'>{{content}}</h1>"
+}
+
+export interface CustomTemplate {
+  id: string;
+  name: string;
+  nodes: {
+    h1: NodeTemplate;
+    h2: NodeTemplate;
+    h3: NodeTemplate;
+    p: NodeTemplate;
+    ul: NodeTemplate;
+    ol: NodeTemplate;
+    li: NodeTemplate;
+    section: NodeTemplate;
+    page: NodeTemplate; // The outer wrapper
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Body + display pairing for resume preview and PDF. */
 export type ResumeFontPreset =
   | "lora_playfair"
@@ -29,7 +51,7 @@ export interface ResumeVersion {
   folderId: string;
   title: string;
   content: JSONContent;
-  template: ResumeTemplate;
+  template: ResumeTemplate | string;
   margins?: MarginSettings;
   linkSettings?: LinkSettings;
   atsScore: number | null;

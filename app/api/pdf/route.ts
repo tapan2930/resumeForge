@@ -8,6 +8,8 @@ import {
   shouldUseSparticuzChromium,
 } from "@/lib/resolve-chrome-executable";
 import type {
+  CustomTemplate,
+  LinkSettings,
   MarginSettings,
   PaperSize,
   ResumeFontPreset,
@@ -19,7 +21,8 @@ export const maxDuration = 60;
 
 type Body = {
   content: JSONContent;
-  template: ResumeTemplate;
+  template: ResumeTemplate | string;
+  customTemplate?: CustomTemplate;
   fontPreset?: ResumeFontPreset | null;
   margins?: MarginSettings;
   linkSettings?: LinkSettings;
@@ -45,6 +48,7 @@ export async function POST(req: Request) {
   const html = buildResumePdfHtml({
     content: body.content,
     template: body.template,
+    customTemplate: body.customTemplate,
     fontPreset: body.fontPreset,
     margins: body.margins,
     linkSettings: body.linkSettings,

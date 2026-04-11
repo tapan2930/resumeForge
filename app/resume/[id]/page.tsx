@@ -12,7 +12,9 @@ import {
   Loader2,
   FileDown,
   Edit2,
+  Layout,
   Link as LinkIcon,
+  Pencil,
   Settings2,
 } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
@@ -33,6 +35,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -66,6 +69,7 @@ import { useGemini } from "@/features/ai/useGemini";
 import { MARGIN_PRESET_LABELS } from "@/lib/margins";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getBuiltInTemplateAsCustom } from "@/lib/built-in-templates";
 
 type GrammarResponse = {
   grammarScore: number;
@@ -82,6 +86,8 @@ export default function ResumePage() {
   const id = params?.id;
   const router = useRouter();
   const folders = useAppStore((s) => s.folders);
+  const customTemplates = useAppStore((s) => s.customTemplates);
+  const importCustomTemplate = useAppStore((s) => s.importCustomTemplate);
   const updateVersion = useAppStore((s) => s.updateVersion);
 
   const [version, setVersion] = useState<ResumeVersion | null>(null);
@@ -89,7 +95,7 @@ export default function ResumePage() {
   const [previewContent, setPreviewContent] = useState<JSONContent | null>(
     null
   );
-  const [template, setTemplate] = useState<ResumeTemplate>("minimal");
+  const [template, setTemplate] = useState<ResumeTemplate | string>("minimal");
   const [margins, setMargins] = useState<MarginSettings>({
     preset: "default",
     horizontal: 48,
@@ -119,6 +125,23 @@ export default function ResumePage() {
   const saveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const { hasKey } = useGemini();
 
+  const activeCustomTemplate = useMemo(
+    () => customTemplates.find((t) => t.id === template),
+    [customTemplates, template]
+  );
+
+  const onCustomizeBuiltIn = async (builtInId: ResumeTemplate) => {
+    try {
+      const data = getBuiltInTemplateAsCustom(builtInId);
+      const t = await importCustomTemplate(data);
+      setTemplate(t.id);
+      setVersion((prev) => (prev ? { ...prev, template: t.id } : prev));
+      toast.success(`Created "${t.name}" based on built-in`);
+    } catch (e) {
+      toast.error("Failed to customize template");
+    }
+  };
+
   const folder = useMemo(
     () => folders.find((f) => f.id === version?.folderId),
     [folders, version?.folderId]
@@ -128,7 +151,7 @@ export default function ResumePage() {
     async (
       v: ResumeVersion,
       json: JSONContent,
-      tmpl: ResumeTemplate,
+      tmpl: ResumeTemplate | string,
       m: MarginSettings,
       ls: LinkSettings
     ) => {
@@ -407,22 +430,77 @@ export default function ResumePage() {
                   className="cursor-pointer border-border max-w-[140px] truncate sm:max-w-none"
                   aria-label="Resume layout template"
                 >
-                  Template: {RESUME_TEMPLATE_LABELS[template]}
+                  Template:{" "}
+                  {activeCustomTemplate
+                    ? activeCustomTemplate.name
+                    : RESUME_TEMPLATE_LABELS[template as ResumeTemplate] ||
+                      "Custom"}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+              <DropdownMenuContent
+                align="end"
+                className="max-h-72 overflow-y-auto"
+              >
+                <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                  Built-in
+                </div>
                 {RESUME_TEMPLATE_IDS.map((t) => (
-                  <DropdownMenuItem
-                    key={t}
-                    className="cursor-pointer"
-                    onSelect={() => {
-                      setTemplate(t);
-                      setVersion((prev) => (prev ? { ...prev, template: t } : prev));
-                    }}
-                  >
-                    {RESUME_TEMPLATE_LABELS[t]}
-                  </DropdownMenuItem>
+                  <div key={t} className="group flex items-center gap-1 pr-1">
+                    <DropdownMenuItem
+                      className="flex-1 cursor-pointer"
+                      onSelect={() => {
+                        setTemplate(t);
+                        setVersion((prev) =>
+                          prev ? { ...prev, template: t } : prev
+                        );
+                      }}
+                    >
+                      {RESUME_TEMPLATE_LABELS[t]}
+                    </DropdownMenuItem>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 cursor-pointer opacity-0 group-hover:opacity-100 hover:bg-secondary focus:opacity-100"
+                      title={`Customize ${RESUME_TEMPLATE_LABELS[t]}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void onCustomizeBuiltIn(t);
+                      }}
+                    >
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                  </div>
                 ))}
+
+                {customTemplates.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                      Your Templates
+                    </div>
+                    {customTemplates.map((ct) => (
+                      <DropdownMenuItem
+                        key={ct.id}
+                        className="cursor-pointer"
+                        onSelect={() => {
+                          setTemplate(ct.id);
+                          setVersion((prev) =>
+                            prev ? { ...prev, template: ct.id } : prev
+                          );
+                        }}
+                      >
+                        {ct.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/templates" className="flex items-center gap-2">
+                    <Layout className="h-3.5 w-3.5" />
+                    Manage Templates
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -639,6 +717,7 @@ export default function ResumePage() {
                   <ResumePreview
                     content={previewContent}
                     template={template}
+                    customTemplate={activeCustomTemplate}
                     margins={margins}
                     linkSettings={linkSettings}
                   />
@@ -673,6 +752,7 @@ export default function ResumePage() {
         onOpenChange={setPdfOpen}
         content={previewContent}
         template={template}
+        customTemplate={activeCustomTemplate}
         margins={margins}
         linkSettings={linkSettings}
         defaultFileName={pdfName}
