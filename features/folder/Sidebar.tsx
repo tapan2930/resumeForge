@@ -7,12 +7,14 @@ import {
   ChevronRight,
   FolderOpen,
   Layout,
+  LogOut,
   MoreHorizontal,
   Pencil,
   Plus,
   Settings,
   Trash2,
 } from "lucide-react";
+import { useKindeBrowserClient, LogoutLink } from "@kinde-oss/kinde-auth-nextjs";
 import { useAppStore } from "@/stores/useAppStore";
 import { FOLDER_COLORS, type ResumeFolder } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -43,6 +45,7 @@ import { Separator } from "@/components/ui/separator";
 
 export function Sidebar() {
   const router = useRouter();
+  const { user } = useKindeBrowserClient();
   const folders = useAppStore((s) => s.folders);
   const activeFolderId = useAppStore((s) => s.activeFolderId);
   const setActiveFolderId = useAppStore((s) => s.setActiveFolderId);
@@ -210,6 +213,42 @@ export function Sidebar() {
           )}
         </nav>
       </ScrollArea>
+
+      <div className="border-t border-border p-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {user?.picture ? (
+              <img
+                src={user.picture}
+                alt=""
+                className="h-7 w-7 rounded-full bg-secondary"
+              />
+            ) : (
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-bold uppercase">
+                {user?.given_name?.[0] || "U"}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold">
+                {user?.given_name} {user?.family_name}
+              </p>
+              <p className="truncate text-[10px] text-muted-foreground">
+                {user?.email}
+              </p>
+            </div>
+          </div>
+          <LogoutLink>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-foreground"
+              aria-label="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </LogoutLink>
+        </div>
+      </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent aria-describedby={undefined}>

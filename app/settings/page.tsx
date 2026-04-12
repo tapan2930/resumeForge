@@ -133,7 +133,7 @@ export default function SettingsPage() {
       }
       saveFoldersToStorage(data.folders);
       await importVersions(data.versions, false);
-      hydrate();
+      void hydrate();
       toast.success("Data imported. Reload recommended.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Import failed");
@@ -159,10 +159,12 @@ export default function SettingsPage() {
           </Button>
         </div>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Settings
+          </h1>
           <p className="text-sm text-muted-foreground">
-            API keys stay in this browser only. For team sync, a future Supabase
-            backend can replace local storage.
+            Resumes and folders are now securely synced to the cloud via Turso.
+            API keys stay in this browser only for maximum privacy.
           </p>
         </div>
 

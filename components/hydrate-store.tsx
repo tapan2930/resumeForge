@@ -6,7 +6,7 @@ import { useAppStore } from "@/stores/useAppStore";
 export function HydrateStore() {
   const hydrate = useAppStore((s) => s.hydrate);
   useEffect(() => {
-    hydrate();
+    void hydrate();
   }, [hydrate]);
   return null;
 }
