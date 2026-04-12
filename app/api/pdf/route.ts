@@ -5,7 +5,6 @@ import chromium from "@sparticuz/chromium-min";
 import { buildResumePdfHtml } from "@/lib/render-pdf-html";
 import {
   resolveLocalChromeExecutable,
-  shouldUseSparticuzChromium,
 } from "@/lib/resolve-chrome-executable";
 import type {
   CustomTemplate,
@@ -62,7 +61,7 @@ export async function POST(req: Request) {
 
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | undefined;
   try {
-    const isLinux = process.platform === "linux";
+    const isVercel = !!process.env.VERCEL_ENV;
     const chromeOverride = process.env.CHROME_EXECUTABLE_PATH?.trim();
 
     if (chromeOverride) {
@@ -78,13 +77,17 @@ export async function POST(req: Request) {
         ],
         defaultViewport: chromium.defaultViewport,
       });
-    } else if (isLinux) {
+    } else if (isVercel) {
       // Preferred path for Vercel/Serverless
+
+
       browser = await puppeteer.launch({
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(
-          "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar"
+          process.env.VERCEL_PROJECT_PRODUCTION_URL
+            ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}/chromium-pack.tar`
+            : "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar"
         ),
         headless: chromium.headless,
       });
@@ -145,7 +148,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (e) {
-    if (browser) await browser.close().catch(() => {});
+    if (browser) await browser.close().catch(() => { });
     const message = e instanceof Error ? e.message : "PDF generation failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
