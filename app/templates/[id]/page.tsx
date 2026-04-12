@@ -927,6 +927,7 @@ export default function TemplateBuilderPage() {
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save Template
           </Button>
+          </div>
         </header>
 
         <div className="flex-1 min-h-0">
