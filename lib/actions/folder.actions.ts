@@ -2,7 +2,7 @@
 
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { db } from "@/db";
-import { folders } from "@/db/schema";
+import { folders, resumes } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -47,6 +47,10 @@ export async function updateFolderAction(id: string, patch: { name?: string; col
 
 export async function deleteFolderAction(id: string) {
   const userId = await getUserId();
+  // Delete all resumes in this folder first (FK constraint)
+  await db
+    .delete(resumes)
+    .where(and(eq(resumes.folderId, id), eq(resumes.userId, userId)));
   await db
     .delete(folders)
     .where(and(eq(folders.id, id), eq(folders.userId, userId)));
