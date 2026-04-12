@@ -22,7 +22,7 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.6",
-    "@sparticuz/chromium-min": "^131.0.1",
+    "@sparticuz/chromium-min": "^141.0.0",
     "@tiptap/extension-horizontal-rule": "^2.10.4",
     "@tiptap/extension-link": "^2.10.4",
     "@tiptap/extension-placeholder": "^2.10.4",
@@ -39,7 +39,7 @@
     "lucide-react": "^0.468.0",
     "next": "14.2.35",
     "prismjs": "^1.30.0",
-    "puppeteer-core": "^23.10.1",
+    "puppeteer-core": "^23.11.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-resizable-panels": "^2.1.7",
@@ -50,7 +50,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "@sparticuz/chromium": "^131.0.1",
+    "@sparticuz/chromium": "^141.0.0",
     "@types/node": "^20.17.10",
     "@types/prismjs": "^1.26.6",
     "@types/react": "^18.3.14",
