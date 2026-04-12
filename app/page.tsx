@@ -19,6 +19,11 @@ import {
 } from "lucide-react";
 import { RegisterLink, LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "AI-Powered Resume Builder & ATS Scorer",
+};
 
 export default async function LandingPage() {
   const { isAuthenticated } = getKindeServerSession();

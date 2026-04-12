@@ -76,8 +76,64 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "ResumeForge",
-  description: "AI-powered resume editor with version control and PDF export",
+  metadataBase: new URL("https://resforge.tapan.pro/"),
+  title: {
+    default: "ResumeForge | AI-Powered Resume Builder & ATS Scorer",
+    template: "%s | ResumeForge",
+  },
+  description:
+    "Forge your career with ResumeForge. AI-powered resume editor that scores, tailors, and perfects your resume for every role with pixel-perfect PDF exports.",
+  keywords: [
+    "AI Resume Builder",
+    "ATS Resume Scorer",
+    "Resume Tailoring",
+    "ResumeForge",
+    "Professional Resume Templates",
+    "Career Tool",
+  ],
+  authors: [{ name: "ResumeForge Team" }],
+  creator: "ResumeForge",
+  publisher: "ResumeForge",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://resforge.tapan.pro/",
+    siteName: "ResumeForge",
+    title: "ResumeForge | AI-Powered Resume Builder",
+    description:
+      "Stop writing resumes. Start forging careers. The AI-powered resume editor that scores, tailors, and perfects your resume for every role.",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "ResumeForge Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ResumeForge | AI-Powered Resume Builder",
+    description:
+      "The AI-powered resume editor that actually handles the ATS for you. Get callbacks faster with tailored content.",
+    images: ["/opengraph-image"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
