@@ -505,7 +505,8 @@ export default function TemplateBuilderPage() {
         const next = { ...prev };
         if (activeNode === "section") {
           (next.nodes as any).section.default.html = val;
-        } else if (activeNode.includes(":")) {          next.nodes.overrides[activeNode] = { html: val };
+        } else if (activeNode.includes(":")) {
+          next.nodes.overrides[activeNode] = { html: val };
         } else {
           // @ts-ignore
           next.nodes[activeNode] = { html: val };
@@ -890,12 +891,12 @@ export default function TemplateBuilderPage() {
                                 {prop}
                               </Button>
                             ))}
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  </Panel>
-                </PanelGroup>
-              </div>
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    </Panel>
+                  </PanelGroup>
+                </div>
               </div>
             </Panel>
 
@@ -908,7 +909,7 @@ export default function TemplateBuilderPage() {
                   Reset Sample
                 </Button>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto p-4 bg-zinc-100 text-neutral-900">
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 bg-zinc-100/50 text-neutral-900">
                 <div className="mx-auto shadow-2xl">
                   <ResumePreview
                     content={sampleContent}
