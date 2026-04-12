@@ -53,7 +53,7 @@ export function CommandPaletteHost() {
             className="cursor-pointer"
             onSelect={() => {
               setOpen(false);
-              router.push("/");
+              router.push("/dashboard");
             }}
           >
             <Home className="mr-2 h-4 w-4" />

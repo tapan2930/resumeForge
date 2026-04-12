@@ -388,7 +388,7 @@ export default function ResumePage() {
             size="sm"
             className="cursor-pointer gap-1"
           >
-            <Link href="/" aria-label="Back to dashboard">
+            <Link href="/dashboard" aria-label="Back to dashboard">
               <ArrowLeft className="h-4 w-4" />
               Dashboard
             </Link>

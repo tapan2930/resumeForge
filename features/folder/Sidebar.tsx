@@ -66,7 +66,7 @@ export function Sidebar() {
   const openFolder = async (id: string) => {
     setActiveFolderId(id);
     await loadVersionsForFolder(id);
-    router.push("/");
+    router.push("/dashboard");
   };
 
   return (
@@ -76,7 +76,7 @@ export function Sidebar() {
     >
       <div className="flex items-center justify-between border-b border-border px-3 py-3">
         <Link
-          href="/"
+          href="/dashboard"
           className="font-sans text-sm font-semibold uppercase tracking-widest text-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
         >
           ResumeForge

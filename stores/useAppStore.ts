@@ -101,13 +101,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   hydrate: async () => {
     await syncUser();
-    const folders = await getFolders();
-    set({
-      folders: folders as any,
-      hydrated: true,
-      activeFolderId: folders[0]?.id ?? null,
-    });
-    void get().loadTemplates();
+    try {
+      const folders = await getFolders();
+      set({
+        folders: folders as any,
+        hydrated: true,
+        activeFolderId: folders[0]?.id ?? null,
+      });
+      void get().loadTemplates();
+    } catch (error) {
+      // User is likely unauthenticated on a public page, safely set hydrated
+      set({ hydrated: true });
+    }
   },
 
   setActiveFolderId: (id) => set({ activeFolderId: id }),

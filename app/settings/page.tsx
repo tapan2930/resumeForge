@@ -152,7 +152,7 @@ export default function SettingsPage() {
             size="sm"
             className="cursor-pointer gap-1"
           >
-            <Link href="/">
+            <Link href="/dashboard">
               <ArrowLeft className="h-4 w-4" />
               Back
             </Link>

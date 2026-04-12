@@ -7,7 +7,7 @@ export default function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
+    "/dashboard",
     "/resume/:path*",
     "/templates/:path*",
     "/settings/:path*",
