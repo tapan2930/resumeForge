@@ -1,15 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getTopLevelResumeSectionIndices,
   swapTopLevelBlocks,
+  moveTopLevelBlock,
 } from "@/lib/tiptap-helpers";
 import type { JSONContent } from "@tiptap/core";
+import { cn } from "@/lib/utils";
 
 export function SectionOutline({ editor }: { editor: Editor | null }) {
+  const [dragged, setDragged] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+
   if (!editor) return null;
 
   const doc = editor.getJSON() as JSONContent;
@@ -18,6 +24,11 @@ export function SectionOutline({ editor }: { editor: Editor | null }) {
 
   const swap = (a: number, b: number) => {
     const next = swapTopLevelBlocks(doc, a, b);
+    editor.commands.setContent(next, false);
+  };
+
+  const move = (from: number, to: number) => {
+    const next = moveTopLevelBlock(doc, from, to);
     editor.commands.setContent(next, false);
   };
 
@@ -39,12 +50,46 @@ export function SectionOutline({ editor }: { editor: Editor | null }) {
             : "Section";
         const prevIdx = i > 0 ? indices[i - 1] : null;
         const nextIdx = i < indices.length - 1 ? indices[i + 1] : null;
+        
         return (
           <div
             key={`${blockIndex}-${i}`}
-            className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1"
+            draggable
+            onDragStart={(e) => {
+              setDragged(blockIndex);
+              e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setData("text/plain", blockIndex.toString());
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              if (dragOver !== blockIndex) {
+                setDragOver(blockIndex);
+              }
+            }}
+            onDragLeave={() => {
+              if (dragOver === blockIndex) setDragOver(null);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(null);
+              if (dragged !== null && dragged !== blockIndex) {
+                move(dragged, blockIndex);
+              }
+              setDragged(null);
+            }}
+            onDragEnd={() => {
+              setDragged(null);
+              setDragOver(null);
+            }}
+            className={cn(
+              "flex items-center gap-1 rounded-md border border-border bg-background px-1 py-1 transition-colors cursor-grab active:cursor-grabbing",
+              dragOver === blockIndex && "border-primary bg-primary/10 scale-105 shadow-sm",
+              dragged === blockIndex && "opacity-50 border-dashed"
+            )}
           >
-            <span className="max-w-[120px] truncate text-xs font-medium">
+            <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="max-w-[120px] truncate text-xs font-medium pl-1 pr-2">
               {title}
             </span>
             <Button

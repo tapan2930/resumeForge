@@ -8,6 +8,14 @@ import type { ResumeVersion } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+
+function atsBadgeVariant(score: number | null) {
+  if (score == null) return "outline" as const;
+  if (score < 60) return "danger" as const;
+  if (score <= 80) return "warning" as const;
+  return "success" as const;
+}
 
 export function RecentResumes() {
   const folders = useAppStore((s) => s.folders);
@@ -58,9 +66,16 @@ export function RecentResumes() {
             <Link href={`/resume/${v.id}`} className="block cursor-pointer">
               <Card className="transition-colors duration-200 hover:border-primary/40">
                 <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="truncate">{v.title}</span>
+                  <CardTitle className="text-sm font-medium flex items-center justify-between gap-2 w-full">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="truncate">{v.title}</span>
+                    </div>
+                    {v.atsScore != null && (
+                      <Badge variant={atsBadgeVariant(v.atsScore)} className="h-5 text-[10px] px-1.5 shrink-0">
+                        ATS {v.atsScore}
+                      </Badge>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-4 pb-3 pt-0 text-xs text-muted-foreground">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Copy, FileText, Plus, Trash2, Edit2, Check, X } from "lucide-react";
+import { Copy, FileText, Plus, Trash2, Edit2, Check, X, FolderUp } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ResumeVersion } from "@/lib/types";
@@ -19,6 +19,12 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 function atsBadgeVariant(score: number | null) {
   if (score == null) return "outline" as const;
@@ -36,6 +42,7 @@ export function VersionList() {
   const addVersion = useAppStore((s) => s.addVersion);
   const updateVersion = useAppStore((s) => s.updateVersion);
   const duplicateVersion = useAppStore((s) => s.duplicateVersion);
+  const moveVersion = useAppStore((s) => s.moveVersion);
   const removeVersion = useAppStore((s) => s.removeVersion);
   const undoDeleteVersion = useAppStore((s) => s.undoDeleteVersion);
 
@@ -249,6 +256,41 @@ export function VersionList() {
                       <Copy className="h-3.5 w-3.5" />
                       Duplicate
                     </Button>
+                    {folders.length > 1 && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="cursor-pointer gap-1"
+                          >
+                            <FolderUp className="h-3.5 w-3.5" />
+                            Move
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {folders
+                            .filter((f) => f.id !== v.folderId)
+                            .map((f) => (
+                              <DropdownMenuItem
+                                key={f.id}
+                                className="cursor-pointer"
+                                onClick={async () => {
+                                  try {
+                                    await moveVersion(v.id, v.folderId, f.id);
+                                    toast.success(`Moved to ${f.name}`);
+                                  } catch (e) {
+                                    toast.error("Failed to move version");
+                                  }
+                                }}
+                              >
+                                {f.name}
+                              </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                     <Button
                       type="button"
                       size="sm"

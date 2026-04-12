@@ -89,6 +89,7 @@ export default function ResumePage() {
   const customTemplates = useAppStore((s) => s.customTemplates);
   const importCustomTemplate = useAppStore((s) => s.importCustomTemplate);
   const updateVersion = useAppStore((s) => s.updateVersion);
+  const moveVersion = useAppStore((s) => s.moveVersion);
 
   const [version, setVersion] = useState<ResumeVersion | null>(null);
   const [content, setContent] = useState<JSONContent | null>(null);
@@ -418,9 +419,40 @@ export default function ResumePage() {
                 <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100" />
               </h1>
             )}
-            <p className="text-xs text-muted-foreground truncate">
-              {folder?.name ?? "Folder"} · Auto-saves every 30s
-            </p>
+            <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+              {folders.length > 1 ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="hover:underline focus:outline-none flex items-center gap-1 cursor-pointer">
+                    {folder?.name ?? "Folder"}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {folders.map((f) => (
+                      <DropdownMenuItem
+                        key={f.id}
+                        disabled={f.id === folder?.id}
+                        className="cursor-pointer"
+                        onClick={async () => {
+                          if (version && folder) {
+                            try {
+                              await moveVersion(version.id, folder.id, f.id);
+                              setVersion({ ...version, folderId: f.id });
+                              toast.success(`Moved to ${f.name}`);
+                            } catch (e) {
+                              toast.error("Failed to move");
+                            }
+                          }
+                        }}
+                      >
+                        {f.name} {f.id === folder?.id && "(Current)"}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <span>{folder?.name ?? "Folder"}</span>
+              )}
+              <span>· Auto-saves every 30s</span>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground flex items-center gap-1">

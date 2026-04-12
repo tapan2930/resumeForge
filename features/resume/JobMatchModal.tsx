@@ -13,7 +13,7 @@ import {
   TAILOR_USER,
 } from "@/lib/prompts";
 import { useAppStore } from "@/stores/useAppStore";
-import { generateId } from "@/lib/utils";
+
 import type { ResumeVersion } from "@/lib/types";
 import {
   detectJobBoard,
@@ -363,26 +363,14 @@ export function JobMatchModal({
       if (!data?.content || data.content.type !== "doc") {
         throw new Error("Invalid tailored document from model");
       }
-      const t = new Date().toISOString();
-      const nv: ResumeVersion = {
-        id: generateId(),
-        folderId: version.folderId,
-        title: data.title?.trim() || `AI Tailored — ${jobTitle}`,
+      const title = data.title?.trim() || `AI Tailored — ${jobTitle}`;
+      const nv = await useAppStore.getState().addVersion(version.folderId, {
+        title,
         content: data.content,
         template: version.template,
-        atsScore: null,
-        grammarScore: null,
         isTailored: true,
-        jobTitle: jobTitle.trim(),
-        companyName: companyName.trim(),
-        relevanceScore: relevance.overall_score,
-        tags: ["ai-tailored"],
-        createdAt: t,
-        updatedAt: t,
-      };
-      const { putVersion } = await import("@/lib/idb");
-      await putVersion(nv);
-      await useAppStore.getState().loadVersionsForFolder(version.folderId);
+      });
+
       toast.success("Tailored version created");
       onOpenChange(false);
       fullReset();

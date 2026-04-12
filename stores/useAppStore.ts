@@ -20,6 +20,7 @@ import {
   createResumeAction,
   updateResumeAction,
   deleteResumeAction,
+  restoreResumeAction,
   getResumesByFolder,
   getRecentResumesAction,
   getResumeByIdAction,
@@ -34,9 +35,8 @@ import {
 import { syncUser } from "@/lib/actions/user.actions";
 
 export type LastDeleted = {
-  version: ResumeVersion;
+  resumeId: string;
   folderId: string;
-  timeoutId: ReturnType<typeof setTimeout>;
 };
 
 interface AppState {
@@ -46,9 +46,11 @@ interface AppState {
   customTemplates: CustomTemplate[];
   hydrated: boolean;
   lastDeleted: LastDeleted | null;
+  isSidebarCollapsed: boolean;
 
   hydrate: () => Promise<void>;
   setActiveFolderId: (id: string | null) => void;
+  toggleSidebar: () => void;
 
   addFolder: (name: string, color: string) => Promise<ResumeFolder>;
   updateFolder: (id: string, patch: Partial<Pick<ResumeFolder, "name" | "color">>) => Promise<void>;
@@ -59,7 +61,7 @@ interface AppState {
 
   addVersion: (
     folderId: string,
-    partial?: Partial<Pick<ResumeVersion, "title" | "content" | "template">>
+    partial?: Partial<Pick<ResumeVersion, "title" | "content" | "template" | "isTailored">>
   ) => Promise<ResumeVersion>;
   updateVersion: (
     id: string,
@@ -70,6 +72,7 @@ interface AppState {
     >
   ) => Promise<void>;
   duplicateVersion: (id: string) => Promise<ResumeVersion | null>;
+  moveVersion: (id: string, oldFolderId: string, newFolderId: string) => Promise<void>;
   removeVersion: (id: string, folderId: string) => Promise<void>;
   undoDeleteVersion: () => Promise<void>;
 
@@ -98,6 +101,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   customTemplates: [],
   hydrated: false,
   lastDeleted: null,
+  isSidebarCollapsed: false,
 
   hydrate: async () => {
     await syncUser();
@@ -116,6 +120,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setActiveFolderId: (id) => set({ activeFolderId: id }),
+  toggleSidebar: () => set((s) => ({ isSidebarCollapsed: !s.isSidebarCollapsed })),
 
   addFolder: async (name, color) => {
     const folder = await createFolder(name, color);
@@ -165,6 +170,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       template: partial?.template ?? "minimal",
       margins: { preset: "default", horizontal: 48, vertical: 48 },
       linkSettings: { color: "#1a1a1a", underline: true },
+      isTailored: partial?.isTailored ?? false,
     });
     await get().loadVersionsForFolder(folderId);
     return version as any;
@@ -188,24 +194,40 @@ export const useAppStore = create<AppState>((set, get) => ({
       template: existing.template,
       margins: existing.margins,
       linkSettings: existing.linkSettings,
+      atsScore: existing.atsScore,
+      grammarScore: existing.grammarScore,
     });
     await get().loadVersionsForFolder(existing.folderId);
     return copy as any;
   },
 
+  moveVersion: async (id, oldFolderId, newFolderId) => {
+    if (oldFolderId === newFolderId) return;
+    await updateResumeAction(id, { folderId: newFolderId });
+    await get().loadVersionsForFolder(oldFolderId);
+    await get().loadVersionsForFolder(newFolderId);
+  },
+
   removeVersion: async (id, folderId) => {
-    const existing = await getResumeByIdAction(id);
-    if (!existing) return;
     await deleteResumeAction(id);
-    // Note: Local "undo" logic would need a more complex cloud sync to be truly robust, 
-    // but we'll keep the UI state for now.
+    set({ lastDeleted: { resumeId: id, folderId } });
     await get().loadVersionsForFolder(folderId);
   },
 
   undoDeleteVersion: async () => {
-    // Cloud undo is complex; for simplicity, we'll let users just create new copies if they delete.
-    // Or we could implement a "soft delete" in the schema later.
-    toast.error("Undo not yet supported in cloud mode");
+    const { lastDeleted } = get();
+    if (!lastDeleted) {
+      toast.error("Nothing to undo");
+      return;
+    }
+    try {
+      await restoreResumeAction(lastDeleted.resumeId);
+      await get().loadVersionsForFolder(lastDeleted.folderId);
+      set({ lastDeleted: null });
+      toast.success("Version restored");
+    } catch {
+      toast.error("Restore failed");
+    }
   },
 
   getRecentVersions: async (limit = 8) => {

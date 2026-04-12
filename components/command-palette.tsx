@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   FileText,
+  Folder,
   FolderPlus,
   Home,
   ScanLine,
@@ -20,14 +21,19 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useAppStore } from "@/stores/useAppStore";
+import type { ResumeVersion } from "@/lib/types";
 
 export function CommandPaletteHost() {
   const [open, setOpen] = useState(false);
+  const [resumes, setResumes] = useState<ResumeVersion[]>([]);
   const router = useRouter();
   const pathname = usePathname();
+  
   const activeFolderId = useAppStore((s) => s.activeFolderId);
+  const setActiveFolderId = useAppStore((s) => s.setActiveFolderId);
   const addVersion = useAppStore((s) => s.addVersion);
   const folders = useAppStore((s) => s.folders);
+  const getRecentVersions = useAppStore((s) => s.getRecentVersions);
 
   const onKey = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -41,6 +47,12 @@ export function CommandPaletteHost() {
     return () => window.removeEventListener("keydown", onKey);
   }, [onKey]);
 
+  useEffect(() => {
+    if (open) {
+      void getRecentVersions(50).then(setResumes);
+    }
+  }, [open, getRecentVersions]);
+
   const isResume = pathname?.startsWith("/resume/");
 
   return (
@@ -48,6 +60,48 @@ export function CommandPaletteHost() {
       <CommandInput placeholder="Type a command or search…" />
       <CommandList>
         <CommandEmpty>No results.</CommandEmpty>
+        
+        {folders.length > 0 && (
+          <CommandGroup heading="Folders">
+            {folders.map((f) => (
+              <CommandItem
+                key={f.id}
+                value={`folder ${f.name}`}
+                className="cursor-pointer"
+                onSelect={() => {
+                  setOpen(false);
+                  setActiveFolderId(f.id);
+                  router.push("/dashboard");
+                }}
+              >
+                <Folder className="mr-2 h-4 w-4" style={{ color: f.color }} />
+                {f.name}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {resumes.length > 0 && (
+          <CommandGroup heading="Recent Resumes">
+            {resumes.map((r) => (
+              <CommandItem
+                key={r.id}
+                value={`resume ${r.title}`}
+                className="cursor-pointer"
+                onSelect={() => {
+                  setOpen(false);
+                  router.push(`/resume/${r.id}`);
+                }}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                {r.title}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {folders.length > 0 && <CommandSeparator />}
+
         <CommandGroup heading="Navigate">
           <CommandItem
             className="cursor-pointer"

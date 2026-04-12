@@ -66,3 +66,8 @@ html.light body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Fix ProseMirror gapcursor color for dark theme */
+.ProseMirror-gapcursor:after {
+  border-top-color: hsl(var(--foreground)) !important;
+}

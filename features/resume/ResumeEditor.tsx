@@ -69,6 +69,8 @@ export function ResumeEditor({
   const { hasKey } = useGemini();
   const aiBlocked = disabledAi || !hasKey;
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInternalUpdate = useRef(false);
+  const savedSelection = useRef<{ from: number; to: number } | null>(null);
   const [, setOutlineTick] = useState(0);
 
   const bump = useCallback(() => setOutlineTick((t) => t + 1), []);
@@ -102,6 +104,7 @@ export function ResumeEditor({
       },
     },
     onUpdate: ({ editor: ed }) => {
+      isInternalUpdate.current = true;
       const json = ed.getJSON();
       onContentChange(json);
       if (previewTimer.current) clearTimeout(previewTimer.current);
@@ -118,6 +121,10 @@ export function ResumeEditor({
 
   useEffect(() => {
     if (!editor) return;
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false;
+      return;
+    }
     const current = JSON.stringify(editor.getJSON());
     const incoming = JSON.stringify(content);
     if (current !== incoming) {
@@ -177,6 +184,29 @@ export function ResumeEditor({
     );
     if (val) setCustomType(val.toLowerCase().trim());
   };
+
+  const handleStyleMenuOpen = useCallback(
+    (open: boolean) => {
+      if (!editor) return;
+      if (open) {
+        savedSelection.current = {
+          from: editor.state.selection.from,
+          to: editor.state.selection.to,
+        };
+      } else if (savedSelection.current) {
+        requestAnimationFrame(() => {
+          if (!editor || !savedSelection.current) return;
+          editor
+            .chain()
+            .focus()
+            .setTextSelection(savedSelection.current)
+            .run();
+          savedSelection.current = null;
+        });
+      }
+    },
+    [editor]
+  );
 
   if (!editor) {
     return (
@@ -395,11 +425,11 @@ export function ResumeEditor({
                 editor.isActive("resumeSection")
               }
             >
-              <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-xl">
+              <div className="relative flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-xl">
                 <div className="px-2 text-[10px] uppercase font-bold text-muted-foreground tracking-wider border-r border-border mr-1">
                   Style Type
                 </div>
-                <DropdownMenu>
+                <DropdownMenu modal={false} onOpenChange={handleStyleMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
@@ -420,7 +450,12 @@ export function ResumeEditor({
                       })()}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-40">
+                  <DropdownMenuContent
+                    portaled={false}
+                    align="start"
+                    className="w-40 !duration-0 data-[state=closed]:animate-none"
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                  >
                     <DropdownMenuItem
                       className="cursor-pointer text-xs"
                       onClick={() => setCustomType(null)}

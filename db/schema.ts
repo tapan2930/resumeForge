@@ -32,6 +32,7 @@ export const resumes = sqliteTable("resumes", {
   isTailored: integer("is_tailored", { mode: "boolean" }).notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  deletedAt: integer("deleted_at", { mode: "timestamp" }),
 });
 
 export const customTemplates = sqliteTable("custom_templates", {
