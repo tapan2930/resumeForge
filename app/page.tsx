@@ -30,21 +30,22 @@ export default async function LandingPage() {
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 overflow-x-hidden">
 
       {/* ─── Navigation ─── */}
-      <nav className="flex items-center justify-between px-6 lg:px-12 py-4 border-b border-border/30 backdrop-blur-xl bg-background/60 sticky top-0 z-50">
-        <div className="flex items-center gap-2.5">
+      <nav className="flex items-center justify-between px-4 sm:px-6 lg:px-12 py-3 sm:py-4 border-b border-border/30 backdrop-blur-xl bg-background/60 sticky top-0 z-50">
+        <div className="flex items-center gap-2 shrink-0">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-amber-600 flex items-center justify-center">
             <Layers className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="font-sans text-lg font-bold tracking-tight">
+          <span className="font-sans text-lg font-bold tracking-tight hidden sm:inline">
             ResumeForge
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <LoginLink className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-4 py-2 rounded-lg hover:bg-secondary/60">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <LoginLink className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-secondary/60">
             Log in
           </LoginLink>
-          <RegisterLink className="landing-cta-button inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98]">
-            Get Started Free
+          <RegisterLink className="landing-cta-button inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 sm:px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap">
+            <span className="sm:hidden">Start Free</span>
+            <span className="hidden sm:inline">Get Started Free</span>
             <ChevronRight className="h-3.5 w-3.5" />
           </RegisterLink>
         </div>
