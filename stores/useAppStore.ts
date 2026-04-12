@@ -262,13 +262,20 @@ export const useAppStore = create<AppState>((set, get) => ({
       page: { html: '<div style="background:white; color:#1a1a1a;">{{content}}</div>' },
       overrides: {},
     };
-    const template = await createCustomTemplateAction(name, nodes);
+    const margins = { preset: "default", horizontal: 48, vertical: 48 };
+    const linkSettings = { color: "#1a1a1a", underline: true };
+    const template = await createCustomTemplateAction(name, nodes, margins, linkSettings);
     await get().loadTemplates();
     return template as any;
   },
 
   importCustomTemplate: async (data) => {
-    const template = await createCustomTemplateAction(data.name, data.nodes);
+    const template = await createCustomTemplateAction(
+      data.name, 
+      data.nodes,
+      data.margins ?? { preset: "default", horizontal: 48, vertical: 48 },
+      data.linkSettings ?? { color: "#1a1a1a", underline: true }
+    );
     await get().loadTemplates();
     return template as any;
   },

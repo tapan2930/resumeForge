@@ -18,10 +18,18 @@ import {
   Wand2,
   Search,
   Minus,
+  Settings2,
+  Link as LinkIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/stores/useAppStore";
-import type { CustomTemplate, NodeTemplate } from "@/lib/types";
+import type {
+  CustomTemplate,
+  NodeTemplate,
+  MarginSettings,
+  LinkSettings,
+  MarginPreset,
+} from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +49,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MARGIN_PRESET_LABELS } from "@/lib/margins";
 import type { JSONContent } from "@tiptap/core";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -430,6 +445,16 @@ export default function TemplateBuilderPage() {
   const [targetPath, setTargetPath] = useState<string | null>(null);
   const [cssSearch, setCssSearch] = useState("");
 
+  const [margins, setMargins] = useState<MarginSettings>({
+    preset: "default",
+    horizontal: 48,
+    vertical: 48,
+  });
+  const [linkSettings, setLinkSettings] = useState<LinkSettings>({
+    color: "#1a1a1a",
+    underline: true,
+  });
+
   const onNodeClick = useCallback((type: string, path: string) => {
     if (path === "root") {
       setActiveNode("page");
@@ -463,6 +488,8 @@ export default function TemplateBuilderPage() {
       if (!normalized.nodes.overrides) {
         normalized.nodes.overrides = {};
       }
+      if (normalized.margins) setMargins(normalized.margins);
+      if (normalized.linkSettings) setLinkSettings(normalized.linkSettings);
       if (!normalized.nodes.hr) {
         normalized.nodes.hr = {
           html: '<hr style="border:none; border-top:1px solid #ddd; margin:16px 0;" />',
@@ -477,7 +504,11 @@ export default function TemplateBuilderPage() {
     if (!template || !id) return;
     setSaving(true);
     try {
-      await updateTemplate(id, template);
+      await updateTemplate(id, {
+        ...template,
+        margins,
+        linkSettings,
+      });
       toast.success("Template saved");
     } catch (e) {
       toast.error("Save failed");
@@ -727,7 +758,172 @@ export default function TemplateBuilderPage() {
               }
             />
           </div>
-          <Button type="button" size="sm" className="cursor-pointer gap-2" onClick={onSave} disabled={saving}>
+
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer border-border gap-1"
+                  aria-label="Margin settings"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  Margins: {MARGIN_PRESET_LABELS[margins.preset]}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 p-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none text-sm">Margins</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Set document margins for preview and PDF.
+                    </p>
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {(
+                        ["default", "minimum", "none", "custom"] as MarginPreset[]
+                      ).map((p) => (
+                        <Button
+                          key={p}
+                          size="sm"
+                          variant={margins.preset === p ? "default" : "outline"}
+                          className="cursor-pointer h-7 text-xs"
+                          onClick={() =>
+                            setMargins((prev) => ({ ...prev, preset: p }))
+                          }
+                        >
+                          {MARGIN_PRESET_LABELS[p]}
+                        </Button>
+                      ))}
+                    </div>
+                    {margins.preset === "custom" && (
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="grid gap-1">
+                          <Label
+                            htmlFor="margin-h"
+                            className="text-[10px] uppercase"
+                          >
+                            Horizontal (px)
+                          </Label>
+                          <Input
+                            id="margin-h"
+                            type="number"
+                            className="h-7 px-2 text-xs"
+                            value={margins.horizontal}
+                            onChange={(e) =>
+                              setMargins((prev) => ({
+                                ...prev,
+                                horizontal: parseInt(e.target.value) || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="grid gap-1">
+                          <Label
+                            htmlFor="margin-v"
+                            className="text-[10px] uppercase"
+                          >
+                            Vertical (px)
+                          </Label>
+                          <Input
+                            id="margin-v"
+                            type="number"
+                            className="h-7 px-2 text-xs"
+                            value={margins.vertical}
+                            onChange={(e) =>
+                              setMargins((prev) => ({
+                                ...prev,
+                                vertical: parseInt(e.target.value) || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer border-border gap-1"
+                  aria-label="Link settings"
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  Links
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none text-sm">
+                      Link Style
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Customize how hyperlinks appear.
+                    </p>
+                  </div>
+                  <div className="grid gap-3">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="link-color" className="text-xs">
+                        Color
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="link-color-picker"
+                          type="color"
+                          className="h-8 w-12 p-1 cursor-pointer"
+                          value={linkSettings.color}
+                          onChange={(e) =>
+                            setLinkSettings((prev) => ({
+                              ...prev,
+                              color: e.target.value,
+                            }))
+                          }
+                        />
+                        <Input
+                          id="link-color-hex"
+                          className="h-8 flex-1 px-2 text-xs font-mono"
+                          value={linkSettings.color}
+                          onChange={(e) =>
+                            setLinkSettings((prev) => ({
+                              ...prev,
+                              color: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Checkbox
+                        id="link-underline"
+                        checked={linkSettings.underline}
+                        onCheckedChange={(checked) =>
+                          setLinkSettings((prev) => ({
+                            ...prev,
+                            underline: !!checked,
+                          }))
+                        }
+                      />
+                      <Label
+                        htmlFor="link-underline"
+                        className="text-xs cursor-pointer font-normal"
+                      >
+                        Underline links
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button type="button" size="sm" className="cursor-pointer gap-2" onClick={onSave} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save Template
           </Button>
@@ -909,12 +1105,14 @@ export default function TemplateBuilderPage() {
                   Reset Sample
                 </Button>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto p-4 bg-zinc-100/50 text-neutral-900">
+              <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-100 text-neutral-900">
                 <div className="mx-auto shadow-2xl">
                   <ResumePreview
                     content={sampleContent}
-                    template="custom"
+                    template={template.id}
                     customTemplate={template}
+                    margins={margins}
+                    linkSettings={linkSettings}
                     highlightNode={activeNode}
                     onNodeClick={onNodeClick}
                   />

@@ -40,6 +40,8 @@ export const customTemplates = sqliteTable("custom_templates", {
   userId: text("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   nodes: text("nodes", { mode: "json" }).notNull(),
+  margins: text("margins", { mode: "json" }),
+  linkSettings: text("link_settings", { mode: "json" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });

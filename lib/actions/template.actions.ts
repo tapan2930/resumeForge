@@ -28,13 +28,20 @@ export async function getCustomTemplateByIdAction(id: string) {
   });
 }
 
-export async function createCustomTemplateAction(name: string, nodes: any) {
+export async function createCustomTemplateAction(
+  name: string,
+  nodes: any,
+  margins?: any,
+  linkSettings?: any
+) {
   const userId = await getUserId();
   const newTemplate = {
     id: crypto.randomUUID(),
     userId,
     name,
     nodes,
+    margins,
+    linkSettings,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

@@ -36,6 +36,8 @@ export interface CustomTemplate {
     page: NodeTemplate; // Outer wrapper
     overrides: Record<string, NodeTemplate>; // e.g. "p:contact-bar", "ul:skills-grid"
   };
+  margins?: MarginSettings;
+  linkSettings?: LinkSettings;
   createdAt: string;
   updatedAt: string;
 }
