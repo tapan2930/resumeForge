@@ -38,7 +38,6 @@ export function VersionList() {
   const activeFolderId = useAppStore((s) => s.activeFolderId);
   const folders = useAppStore((s) => s.folders);
   const versionsCache = useAppStore((s) => s.versionsCache);
-  const loadVersionsForFolder = useAppStore((s) => s.loadVersionsForFolder);
   const addVersion = useAppStore((s) => s.addVersion);
   const updateVersion = useAppStore((s) => s.updateVersion);
   const duplicateVersion = useAppStore((s) => s.duplicateVersion);
@@ -57,9 +56,19 @@ export function VersionList() {
 
   useEffect(() => {
     if (!activeFolderId) return;
+    let cancelled = false;
     setLoading(true);
-    void loadVersionsForFolder(activeFolderId).finally(() => setLoading(false));
-  }, [activeFolderId, loadVersionsForFolder]);
+    void (async () => {
+      try {
+        await useAppStore.getState().loadVersionsForFolder(activeFolderId);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeFolderId]);
 
   const onRename = async (v: ResumeVersion) => {
     if (!renamingValue.trim() || renamingValue === v.title) {

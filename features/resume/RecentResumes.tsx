@@ -19,23 +19,30 @@ function atsBadgeVariant(score: number | null) {
 
 export function RecentResumes() {
   const folders = useAppStore((s) => s.folders);
-  const getRecent = useAppStore((s) => s.getRecentVersions);
+  const hydrated = useAppStore((s) => s.hydrated);
   const [items, setItems] = useState<ResumeVersion[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!hydrated) return;
     let cancelled = false;
+    setLoading(true);
     void (async () => {
-      const list = await getRecent(6);
-      if (!cancelled) {
-        setItems(list);
-        setLoading(false);
+      try {
+        const list = await useAppStore.getState().getRecentVersions(6);
+        if (!cancelled) {
+          setItems(list);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [getRecent]);
+  }, [hydrated]);
 
   const folderName = (fid: string) =>
     folders.find((f) => f.id === fid)?.name ?? "Folder";
