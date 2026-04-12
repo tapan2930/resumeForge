@@ -75,7 +75,7 @@ export async function POST(req: Request) {
           "--disable-dev-shm-usage",
           "--font-render-hinting=none",
         ],
-        defaultViewport: chromium.defaultViewport,
+        defaultViewport: { width: 1920, height: 1080 },
       });
     } else if (isVercel) {
       // Preferred path for Vercel/Serverless
@@ -83,13 +83,13 @@ export async function POST(req: Request) {
 
       browser = await puppeteer.launch({
         args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
+        defaultViewport: { width: 1920, height: 1080 },
         executablePath: await chromium.executablePath(
           process.env.VERCEL_PROJECT_PRODUCTION_URL
             ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}/chromium-pack.tar`
             : "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar"
         ),
-        headless: chromium.headless,
+        headless: true,
       });
     } else {
       // Local development (macOS/Windows)
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
           "--disable-dev-shm-usage",
           "--font-render-hinting=none",
         ],
-        defaultViewport: chromium.defaultViewport,
+        defaultViewport: { width: 1920, height: 1080 },
       });
     }
 
