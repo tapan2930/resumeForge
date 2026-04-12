@@ -94,6 +94,12 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+/** Deep-clone via JSON round-trip to strip class instances / null prototypes
+ *  that Next.js Server Actions reject. */
+function sanitize<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
   folders: [],
   activeFolderId: null,
@@ -163,7 +169,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   getVersionById: (id) => getResumeByIdAction(id) as any,
 
   addVersion: async (folderId, partial) => {
-    const version = await createResumeAction({
+    const version = await createResumeAction(sanitize({
       folderId,
       title: partial?.title ?? "Untitled version",
       content: partial?.content ?? emptyDocument,
@@ -171,13 +177,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       margins: { preset: "default", horizontal: 48, vertical: 48 },
       linkSettings: { color: "#1a1a1a", underline: true },
       isTailored: partial?.isTailored ?? false,
-    });
+    }));
     await get().loadVersionsForFolder(folderId);
     return version as any;
   },
 
   updateVersion: async (id, patch) => {
-    await updateResumeAction(id, patch);
+    await updateResumeAction(id, sanitize(patch));
     const existing = await getResumeByIdAction(id);
     if (existing) {
       await get().loadVersionsForFolder(existing.folderId);
@@ -187,7 +193,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   duplicateVersion: async (id) => {
     const existing = await getResumeByIdAction(id);
     if (!existing) return null;
-    const copy = await createResumeAction({
+    const copy = await createResumeAction(sanitize({
       folderId: existing.folderId,
       title: `${existing.title} (copy)`,
       content: existing.content,
@@ -196,7 +202,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       linkSettings: existing.linkSettings,
       atsScore: existing.atsScore,
       grammarScore: existing.grammarScore,
-    });
+    }));
     await get().loadVersionsForFolder(existing.folderId);
     return copy as any;
   },

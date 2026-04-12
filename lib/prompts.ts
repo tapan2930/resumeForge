@@ -22,12 +22,15 @@ Return ONLY valid JSON with this shape (no markdown fences):
   "issues": [
     {
       "section": string (best-guess section name or "General"),
-      "original": string (exact problematic phrase from the resume if possible),
-      "suggestion": string,
+      "original": string (exact problematic phrase from the resume),
+      "suggestion": string (the corrected text that should directly replace the original — nothing else),
+      "reason": string (brief explanation of why this change is recommended),
       "severity": "error" | "warning" | "suggestion"
     }
   ]
-}`;
+}
+
+CRITICAL: The "suggestion" field must contain ONLY the replacement text. Do NOT append explanations, reasoning, or parenthetical notes to it. Use the "reason" field for that.`;
 
 export const ATS_SYSTEM = `You evaluate resumes for ATS (applicant tracking system) friendliness. Be practical and specific.`;
 
