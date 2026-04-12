@@ -50,6 +50,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@sparticuz/chromium": "^131.0.1",
     "@types/node": "^20.17.10",
     "@types/prismjs": "^1.26.6",
     "@types/react": "^18.3.14",
