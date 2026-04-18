@@ -46,7 +46,7 @@ export function PDFExportModal({
   headerName: string;
 }) {
   const [paperSize, setPaperSize] = useState<PaperSize>("letter");
-  const [includeHeader, setIncludeHeader] = useState(true);
+  const [includeHeader, setIncludeHeader] = useState(false);
   const [includePageNumbers, setIncludePageNumbers] = useState(false);
   const [includeSectionDividers, setIncludeSectionDividers] = useState(true);
   const [avoidSectionBreaks, setAvoidSectionBreaks] = useState(false);
@@ -102,12 +102,7 @@ export function PDFExportModal({
       <DialogContent className="sm:max-w-md" aria-describedby="pdf-export-desc">
         <DialogHeader>
           <DialogTitle>Export PDF</DialogTitle>
-          <DialogDescription id="pdf-export-desc">
-            Renders your preview as a text-selectable PDF. On macOS/Windows, the
-            app uses Google Chrome, Brave, or Chromium if installed. On Linux
-            serverless (e.g. Vercel), it uses bundled Chromium. Override with
-            CHROME_EXECUTABLE_PATH if needed.
-          </DialogDescription>
+
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
@@ -133,7 +128,7 @@ export function PDFExportModal({
               </Button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <Checkbox
               id="pdf-header"
               checked={includeHeader}
@@ -143,7 +138,7 @@ export function PDFExportModal({
             <Label htmlFor="pdf-header" className="cursor-pointer font-normal">
               Header with name &amp; contact strip
             </Label>
-          </div>
+          </div> */}
           <div className="flex items-center gap-2">
             <Checkbox
               id="pdf-pages"

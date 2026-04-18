@@ -33,8 +33,10 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground antialiased;
+    overflow-y: hidden;
   }
 }
 
@@ -53,11 +55,13 @@ html.light {
   --border: 0 0% 88%;
   --input: 0 0% 88%;
 }
+
 html.light body {
   @apply bg-background text-foreground;
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -88,9 +92,17 @@ html.light body {
 .landing-badge {
   animation: landing-badge-in 0.6s ease-out both;
 }
+
 @keyframes landing-badge-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Hero ambient glow */
@@ -100,6 +112,7 @@ html.light body {
   pointer-events: none;
   filter: blur(120px);
 }
+
 .hero-glow--primary {
   width: 600px;
   height: 600px;
@@ -108,6 +121,7 @@ html.light body {
   background: radial-gradient(circle, hsl(38 92% 50% / 0.18), transparent 70%);
   animation: hero-glow-drift 8s ease-in-out infinite alternate;
 }
+
 .hero-glow--secondary {
   width: 400px;
   height: 400px;
@@ -116,9 +130,15 @@ html.light body {
   background: radial-gradient(circle, hsl(350 80% 55% / 0.10), transparent 70%);
   animation: hero-glow-drift 10s ease-in-out infinite alternate-reverse;
 }
+
 @keyframes hero-glow-drift {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(30px, 20px) scale(1.1); }
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+
+  to {
+    transform: translate(30px, 20px) scale(1.1);
+  }
 }
 
 /* Hero grid pattern */
@@ -148,9 +168,17 @@ html.light body {
   animation: resume-card-in 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
   transform-origin: center center;
 }
+
 @keyframes resume-card-in {
-  from { opacity: 0; transform: translateY(30px) rotateX(8deg) scale(0.95); }
-  to   { opacity: 1; transform: translateY(0) rotateX(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(30px) rotateX(8deg) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) rotateX(0) scale(1);
+  }
 }
 
 /* Resume glow behind card */
@@ -162,9 +190,17 @@ html.light body {
   filter: blur(60px);
   animation: resume-glow-pulse 4s ease-in-out infinite alternate;
 }
+
 @keyframes resume-glow-pulse {
-  from { opacity: 0.6; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1.05); }
+  from {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1.05);
+  }
 }
 
 /* Floating ATS badge */
@@ -179,9 +215,17 @@ html.light body {
   box-shadow: 0 8px 32px -8px hsl(0 0% 0% / 0.4);
   animation: float-badge 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
 }
+
 @keyframes float-badge {
-  from { opacity: 0; transform: translateX(20px) translateY(10px) scale(0.9); }
-  to   { opacity: 1; transform: translateX(0) translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateX(20px) translateY(10px) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
+  }
 }
 
 /* Floating AI suggestion */
@@ -202,6 +246,7 @@ html.light body {
 .landing-cta-primary {
   position: relative;
 }
+
 .landing-cta-primary::after {
   content: '';
   position: absolute;
@@ -213,6 +258,7 @@ html.light body {
   opacity: 0;
   transition: opacity 0.3s ease;
 }
+
 .landing-cta-primary:hover::after {
   opacity: 1;
 }
@@ -239,6 +285,7 @@ html.light body {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   backdrop-filter: blur(8px);
 }
+
 .bento-card:hover {
   background: hsl(var(--card) / 0.85);
   border-color: hsl(var(--border) / 0.8);

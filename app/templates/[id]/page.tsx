@@ -924,9 +924,9 @@ export default function TemplateBuilderPage() {
             </DropdownMenu>
 
             <Button type="button" size="sm" className="cursor-pointer gap-2" onClick={onSave} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save Template
-          </Button>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save Template
+            </Button>
           </div>
         </header>
 
@@ -1106,18 +1106,16 @@ export default function TemplateBuilderPage() {
                   Reset Sample
                 </Button>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-100 text-neutral-900">
-                <div className="mx-auto shadow-2xl">
-                  <ResumePreview
-                    content={sampleContent}
-                    template={template.id}
-                    customTemplate={template}
-                    margins={margins}
-                    linkSettings={linkSettings}
-                    highlightNode={activeNode}
-                    onNodeClick={onNodeClick}
-                  />
-                </div>
+              <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-200 text-neutral-900">
+                <ResumePreview
+                  content={sampleContent}
+                  template={template.id}
+                  customTemplate={template}
+                  margins={margins}
+                  linkSettings={linkSettings}
+                  highlightNode={activeNode}
+                  onNodeClick={onNodeClick}
+                />
               </div>
             </Panel>
           </PanelGroup>

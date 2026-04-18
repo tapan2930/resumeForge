@@ -13,6 +13,7 @@ import {
   resolveFontPreset,
 } from "@/lib/resume-fonts";
 import { resolveMargins } from "@/lib/margins";
+import extractBgColor from "./extract-bg-color";
 
 function esc(s: string) {
   return s
@@ -334,6 +335,10 @@ export function buildResumePdfHtml(params: {
 
   const pageSize = paperSize === "a4" ? "A4" : "Letter";
 
+  const pageBgColor = extractBgColor(customTemplate?.nodes.page.html || "");
+
+  console.log("pageBgColor", pageBgColor);
+
   const headerBlock =
     includeHeader && headerName
       ? `<header style="font-family:'Inter',system-ui,sans-serif;font-size:10px;color:#666;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:6px;">${esc(headerName)}</header>`
@@ -341,35 +346,39 @@ export function buildResumePdfHtml(params: {
 
   const pageWrapper = customTemplate
     ? customTemplate.nodes.page.html.replace(
-        "{{content}}",
-        `${headerBlock}<main>${body}</main>`
-      )
+      "{{content}}",
+      `${headerBlock}<main>${body}</main>`
+    )
     : `<div class="page">${headerBlock}<main>${body}</main></div>`;
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background-color: ${pageBgColor};">
 <head>
 <meta charset="utf-8"/>
 <link href="${RESUME_PDF_GOOGLE_FONTS_HREF}" rel="stylesheet"/>
 <style>
   @page { 
     size: ${pageSize}; 
+    background-color: ${pageBgColor}; 
     margin: ${m.vertical}px ${m.horizontal}px; 
   }
   html { color-scheme: only light; }
-  html, body { margin: 0; padding: 0; background: #ffffff; }
+  html, body { 
+    margin: 0; 
+    padding: 0; 
+    background-color: ${pageBgColor}; 
+  }
   .page { 
     color: #1a1a1a; 
-    background: #ffffff; 
+    background-color: ${pageBgColor}; 
   }
 </style>
 </head>
-<body>
-  ${
-    customTemplate
-      ? `<div style="min-height: 100vh;">${pageWrapper}</div>`
+<body style="background-color: ${pageBgColor};">
+  ${customTemplate
+      ? `<div style="min-height: 100vh; background-color: ${pageBgColor};">${pageWrapper}</div>`
       : pageWrapper
-  }
+    }
 </body>
 </html>`;
 }

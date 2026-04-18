@@ -113,7 +113,7 @@ export function getBuiltInTemplateAsCustom(
         overrides: {},
       } as any,
       page: {
-        html: `<div style="background:white; color:#1a1a1a;">{{content}}</div>`,
+        html: `<div style="background-color:#ffffff; color:#1a1a1a;">{{content}}</div>`,
       },
       overrides: {},
     },

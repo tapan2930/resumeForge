@@ -32,7 +32,7 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground h-screen selection:bg-primary/30 overflow-x-hidden">
 
       {/* ─── Navigation ─── */}
       <nav className="flex items-center justify-between px-4 sm:px-6 lg:px-12 py-3 sm:py-4 border-b border-border/30 backdrop-blur-xl bg-background/60 sticky top-0 z-50">
@@ -155,7 +155,7 @@ export default async function LandingPage() {
                 <div>
                   <div className="h-3.5 w-20 rounded bg-primary/70 mb-3" />
                   <div className="flex flex-wrap gap-1.5">
-                    {["w-14","w-16","w-12","w-20","w-14","w-18","w-12","w-16"].map((w, i) => (
+                    {["w-14", "w-16", "w-12", "w-20", "w-14", "w-18", "w-12", "w-16"].map((w, i) => (
                       <div key={i} className={`h-5 ${w} rounded-full bg-secondary`} />
                     ))}
                   </div>

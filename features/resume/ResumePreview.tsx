@@ -14,6 +14,7 @@ import { resumePaperClasses } from "@/lib/resume-template-styles";
 import { cn } from "@/lib/utils";
 import { resolveMargins } from "@/lib/margins";
 import { nodeHtml } from "@/lib/render-pdf-html";
+import extractBgColor from "@/lib/extract-bg-color";
 
 /* US Letter at 96 DPI: 816 x 1056 px.
    The preview container is max-width 612px (75% scale visually),
@@ -58,11 +59,12 @@ export function ResumePreview({
     isPreview: true,
   });
 
+  const pageBgColor = extractBgColor(customTemplate?.nodes.page.html || "");
   const pageWrapper = customTemplate
     ? `<div data-node-type="page" data-node-path="root" style="display: block; min-height: 100%; cursor: pointer;">${customTemplate.nodes.page.html.replace(
-        "{{content}}",
-        html
-      )}</div>`
+      "{{content}}",
+      html
+    )}</div>`
     : html;
 
   // Content height available per page (total page height minus top+bottom margins)
@@ -170,6 +172,7 @@ export function ResumePreview({
             )}
             style={{
               ...pageStyle,
+              backgroundColor: pageBgColor,
               height: `${PAGE_HEIGHT}px`,
               minHeight: `${PAGE_HEIGHT}px`,
               maxHeight: `${PAGE_HEIGHT}px`,
